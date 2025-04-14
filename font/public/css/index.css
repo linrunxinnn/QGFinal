@@ -203,6 +203,7 @@ nav .nav-list .item .icon {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-width: 400px;
 }
 
 .main-contain [data-box="message"] .left > .head {
@@ -291,10 +292,10 @@ nav .nav-list .item .icon {
 
 .main-contain [data-box="message"] .left .message-list .item .primary .text {
   color: #343a40;
-  font-size: 14px;
+  font-size: 13px;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
+  margin-right: 3px;
   width: 100%;
 }
 

@@ -169,11 +169,13 @@ const createTables = async (pool) => {
     `);
 
     await connection.query(`
-        CREATE TABLE IF NOT EXISTS friends (
+       CREATE TABLE IF NOT EXISTS friends (
         user_id INT,
         friend_id INT,
         status ENUM('pending', 'accepted') DEFAULT 'accepted',
-        PRIMARY KEY (user_id, friend_id)
+        PRIMARY KEY (user_id, friend_id),
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (friend_id) REFERENCES users(id)
       );
     `);
 

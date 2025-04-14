@@ -1,3 +1,21 @@
+token = localStorage.getItem("token");
+const urlParams = new URLSearchParams(window.location.search);
+const SelfId = urlParams.get("id");
+function getSelftImg(id) {
+  fetch(`http://localhost:3000/user/getSelfImg?id=${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      window.SelfImg = data.avatar_url;
+    })
+    .catch((error) => console.error("获取头像失败:", error));
+}
+getSelftImg(SelfId);
+
 // nav控制
 const navList = document.querySelectorAll("nav > .nav-list .item");
 const mainItem = document.querySelectorAll(".main > .main-contain > .item");
@@ -32,17 +50,6 @@ document.addEventListener("click", () => {
   navAddIconDrop.style.display = "none";
 });
 
-//消息
-const messageList = document.querySelectorAll(
-  ".main-contain > [data-box='message'] > .left > .message-list > .item"
-);
-const messageBox = document.querySelector(
-  ".main-contain > [data-box='message'] > .right "
-);
-messageList.forEach((item) => {
-  item.addEventListener("click", () => {});
-});
-
 //进度条
 function setProgress(percent) {
   const bar = document.querySelector(".progress-bar");
@@ -50,3 +57,192 @@ function setProgress(percent) {
 }
 // 示例用法
 setProgress(20); // 设置到 80%
+
+//展示时间
+function formatTime(dateString) {
+  const now = new Date();
+  const targetDate = new Date(dateString);
+  const diffTime = now - targetDate; // 计算时间差
+  const diffDays = diffTime / (1000 * 3600 * 24); // 转换为天数
+
+  // 如果超出7天，则只显示月和日
+  if (diffDays > 7) {
+    const month = targetDate.getMonth() + 1; // 月份从0开始
+    const day = targetDate.getDate();
+    return `${month}月${day}日`;
+  } else {
+    // 如果在7天内，显示日和时间（时:分）
+    const day = targetDate.getDate();
+    const hours = targetDate.getHours().toString().padStart(2, "0");
+    const minutes = targetDate.getMinutes().toString().padStart(2, "0");
+    return `${day}日 ${hours}:${minutes}`;
+  }
+}
+//初始化
+(function initialize() {
+  const messageList = document.querySelector(
+    ".main .main-contain > [data-box='message'] > .left > .message-list"
+  );
+
+  const token = localStorage.getItem("token");
+  const userId = SelfId;
+
+  if (!token || !userId) {
+    console.error("缺少token或用户ID");
+    return;
+  }
+
+  fetch(`http://localhost:3000/user/initialize/messageList?id=${userId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((friends) => {
+      messageList.innerHTML = friends
+        .map(
+          (f) => `
+          <div class="item" data-id="${f.friend_id}" onclick="openChat(${
+            f.friend_id
+          }, '${f.friend_name}')">
+            <div class="primary">
+              <div class="img-box">
+                <img src="${f.friend_src}" />
+              </div>
+              <div class="text-box">
+                <div class="name">${f.friend_name}</div>
+                <div class="text">${f.last_message || ""}</div>
+              </div>
+            </div>
+            <div class="last-time">
+              <div class="time">${f.friend_time || ""}</div>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    })
+    .catch((error) => console.error("加载好友列表出错:", error));
+})();
+
+function openChat(friendId, friendName) {
+  console.log(`打开与 ${friendName} 的聊天框，ID: ${friendId}`);
+  // 在这里添加打开聊天框的代码逻辑
+}
+//打开聊天框
+document
+  .querySelector(
+    ".main .main-contain > [data-box='message'] > .left > .message-list"
+  )
+  .addEventListener("click", (e) => {
+    const item = e.target.closest(".item"); // 找到被点击的最近的 .item
+    if (!item) return; // 不是点击在 .item 或其内部就跳过
+
+    const id = item.dataset.id;
+    const name = item.querySelector(".name").textContent;
+
+    document.querySelectorAll(".message-list .item").forEach((x) => {
+      if (x.dataset.id === id) x.classList.add("active");
+      else x.classList.remove("active");
+    });
+
+    openChat(id, name);
+    //right-contain部分display，向数据库获取获取聊天记录并渲染，head渲染
+    const rightContain = document.querySelector(
+      ".main .main-contain > [data-box='message'] > .right > .right-contain"
+    );
+    rightContain.style.display = "block";
+    rightContain.querySelector(
+      ".head > .message > .text-box"
+    ).textContent = `${name}`;
+    const userId = SelfId;
+    fetch(
+      `http://localhost:3000/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        const { selfAvatar, friendAvatar, messages } = data;
+
+        const messageList = document.querySelector(
+          ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
+        );
+
+        messageList.innerHTML = messages
+          .map((m) => {
+            const avatar = m.sender_id == userId ? selfAvatar : friendAvatar;
+            return `
+              <div class="text-item">
+                <div class="img-box">
+                  <img src="${avatar}" />
+                </div>
+                <div class="message-box">
+                  <div class="text">${m.content}</div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      })
+      .catch((error) => console.error("加载聊天记录出错:", error));
+  });
+
+//发送消息
+const sendTextArea = document.querySelector(
+  ".main .main-contain > [data-box='message'] > .right > .right-contain > .input-box textarea"
+);
+const sendButton = document.querySelector(
+  ".main .main-contain > [data-box='message'] > .right > .right-contain > .input-box .icon .send-icon"
+);
+sendTextArea.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault(); // 阻止换行
+    const message = sendTextArea.value.trim();
+    sendTextArea.value = "";
+
+    // 从 URL 中获取 userId 示例代码
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+    fetch("http://localhost:3000/user/send-message", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: getQueryParam("id"),
+        friendId: document.querySelector(
+          ".main .main-contain > [data-box='message'] > .left > .message-list .item.active"
+        ).dataset.id,
+        message,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("消息发送成功:", data);
+        const rightContain = document.querySelector(
+          ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
+        );
+        const newMessage = document.createElement("div");
+        newMessage.className = "text-item";
+        newMessage.innerHTML = `
+          <div class="img-box">
+            <img src="${window.SelfImg}" />
+          </div>
+          <div class="message-box">
+            <div class="text">${message}</div>
+          </div>
+        `;
+        rightContain.appendChild(newMessage);
+      })
+      .catch((error) => console.error("发送消息出错:", error));
+  }
+});

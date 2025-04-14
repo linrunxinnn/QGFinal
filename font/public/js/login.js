@@ -16,7 +16,7 @@ if (document.getElementById("loginForm")) {
       const result = await response.json();
       if (result.success) {
         localStorage.setItem("token", result.token);
-        window.location.href = "index.html";
+        window.location.href = `index.html?id=${result.user.id}`;
       } else {
         alert(result.message);
       }
