@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../css/login.css" />
+    <title>找回密码</title>
+  </head>
+  <body>
+    <div class="container">
+      <h1>重置您的密码</h1>
+      <form id="resetForm">
+        <div class="phone-row">
+          <input type="tel" id="resetPhone" placeholder="电话号码" required />
+          <button type="button" id="sendResetCode">发送验证码</button>
+        </div>
+        <input
+          type="text"
+          id="resetCode"
+          placeholder="验证码"
+          required
+          style="display: none"
+        />
+        <input
+          type="password"
+          id="newResetPassword"
+          placeholder="新密码"
+          required
+          style="display: none"
+        />
+        <input
+          type="password"
+          id="confirmResetPassword"
+          placeholder="确认新密码"
+          required
+          style="display: none"
+        />
+        <button type="submit" style="display: none">重置密码</button>
+      </form>
+    </div>
+    <script src="../js/login.js"></script>
+  </body>
+</html>
