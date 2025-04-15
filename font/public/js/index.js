@@ -1,20 +1,44 @@
+function getQueryParam(param) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
 token = localStorage.getItem("token");
 const urlParams = new URLSearchParams(window.location.search);
 const SelfId = urlParams.get("id");
 function getSelftImg(id) {
-  fetch(`http://localhost:3000/user/getSelfImg?id=${id}`, {
+  return fetch(`http://localhost:3000/user/getSelfImg?id=${id}`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`, // 确保 token 已定义
       "Content-Type": "application/json",
     },
   })
-    .then((res) => res.json())
-    .then((data) => {
-      window.SelfImg = data.avatar_url;
+    .then((res) => {
+      if (!res.ok) {
+        throw new Error(`HTTP错误: ${res.status}`);
+      }
+      return res.json();
     })
-    .catch((error) => console.error("获取头像失败:", error));
+    .then((data) => data.avatar_url) // 返回 avatar_url
+    .catch((error) => {
+      console.error("获取头像失败:", error);
+      throw error; // 抛出错误以便调用者处理
+    });
 }
-getSelftImg(SelfId);
+let SelfImg;
+getSelftImg(SelfId)
+  .then((avatarUrl) => {
+    SelfImg = avatarUrl;
+    document.querySelector("nav > .head > .img-box img").src = `${SelfImg}`;
+  })
+  .catch((error) => {
+    console.error("错误:", error);
+  });
+
+//socket.io 初始化
+const socket = io("http://localhost:3000", {
+  query: { userId: getQueryParam("id") },
+});
 
 // nav控制
 const navList = document.querySelectorAll("nav > .nav-list .item");
@@ -58,26 +82,6 @@ function setProgress(percent) {
 // 示例用法
 setProgress(20); // 设置到 80%
 
-//展示时间
-function formatTime(dateString) {
-  const now = new Date();
-  const targetDate = new Date(dateString);
-  const diffTime = now - targetDate; // 计算时间差
-  const diffDays = diffTime / (1000 * 3600 * 24); // 转换为天数
-
-  // 如果超出7天，则只显示月和日
-  if (diffDays > 7) {
-    const month = targetDate.getMonth() + 1; // 月份从0开始
-    const day = targetDate.getDate();
-    return `${month}月${day}日`;
-  } else {
-    // 如果在7天内，显示日和时间（时:分）
-    const day = targetDate.getDate();
-    const hours = targetDate.getHours().toString().padStart(2, "0");
-    const minutes = targetDate.getMinutes().toString().padStart(2, "0");
-    return `${day}日 ${hours}:${minutes}`;
-  }
-}
 //初始化
 (function initialize() {
   const messageList = document.querySelector(
@@ -157,6 +161,10 @@ document
       ".head > .message > .text-box"
     ).textContent = `${name}`;
     const userId = SelfId;
+    rightContain.querySelector(".head > .message .img-box img").src =
+      document.querySelector(
+        ".main .main-contain > [data-box='message'] > .left > .message-list .item.active .img-box img"
+      ).src;
     fetch(
       `http://localhost:3000/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
       {
@@ -194,6 +202,32 @@ document
   });
 
 //发送消息
+// 实时消息接收
+socket.on("new_message", (message) => {
+  const rightContain = document.querySelector(
+    ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
+  );
+  const senderId = String(message.sender_id);
+  const selfId = String(SelfId);
+  const newMessage = document.createElement("div");
+  newMessage.className = "text-item";
+  newMessage.innerHTML = `
+    <div class="img-box">
+      <img src="${
+        senderId === SelfId
+          ? SelfImg
+          : document.querySelector(
+              ".main .main-contain > [data-box='message'] > .left > .message-list .item.active .img-box img"
+            ).src
+      }" />
+    </div>
+    <div class="message-box">
+      <div class="text">${message.content}</div>
+    </div>
+  `;
+  rightContain.appendChild(newMessage);
+  rightContain.scrollTop = rightContain.scrollHeight;
+});
 const sendTextArea = document.querySelector(
   ".main .main-contain > [data-box='message'] > .right > .right-contain > .input-box textarea"
 );
@@ -228,20 +262,6 @@ sendTextArea.addEventListener("keydown", (e) => {
       .then((res) => res.json())
       .then((data) => {
         console.log("消息发送成功:", data);
-        const rightContain = document.querySelector(
-          ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
-        );
-        const newMessage = document.createElement("div");
-        newMessage.className = "text-item";
-        newMessage.innerHTML = `
-          <div class="img-box">
-            <img src="${window.SelfImg}" />
-          </div>
-          <div class="message-box">
-            <div class="text">${message}</div>
-          </div>
-        `;
-        rightContain.appendChild(newMessage);
       })
       .catch((error) => console.error("发送消息出错:", error));
   }
