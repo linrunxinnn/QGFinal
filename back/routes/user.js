@@ -10,28 +10,8 @@ async function getDb() {
 }
 
 //获取用户头像
-// router.get("/getSelfImg", async (req, res) => {
-//   const userId = req.query.id;
-//   // console.log("User ID from query:", userId);
-
-//   try {
-//     const db = await getDb();
-//     const [rows] = await db.query(`SELECT avatar_url FROM users WHERE id = ?`, [
-//       userId,
-//     ]);
-//     if (rows.length > 0) {
-//       res.json({ avatar_url: rows[0].avatar_url });
-//     } else {
-//       res.status(404).json({ error: "用户未找到" });
-//     }
-//   } catch (err) {
-//     console.error("查询头像失败:", err);
-//     res.status(500).json({ error: "服务器内部错误" });
-//   }
-// });
 router.get("/getSelfImg", async (req, res) => {
   const userId = req.query.id;
-  console.log("User ID:", userId);
   try {
     const db = await getDb();
     const [rows] = await db.query(`SELECT avatar_url FROM users WHERE id = ?`, [
@@ -45,6 +25,25 @@ router.get("/getSelfImg", async (req, res) => {
     }
   } catch (err) {
     console.error("查询头像失败:", err);
+    res.status(500).json({ error: "服务器内部错误" });
+  }
+});
+//获取用户名字
+router.get("/getSelfName", async (req, res) => {
+  const userId = req.query.id;
+  try {
+    const db = await getDb();
+    const [rows] = await db.query(`SELECT name FROM users WHERE id = ?`, [
+      userId,
+    ]);
+    console.log("Rows:", rows);
+    if (rows.length > 0) {
+      res.json({ name: rows[0].name });
+    } else {
+      res.status(404).json({ error: "用户未找到" });
+    }
+  } catch (err) {
+    console.error("查询名字失败:", err);
     res.status(500).json({ error: "服务器内部错误" });
   }
 });

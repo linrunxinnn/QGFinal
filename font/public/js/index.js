@@ -6,6 +6,7 @@ function getQueryParam(param) {
 token = localStorage.getItem("token");
 const urlParams = new URLSearchParams(window.location.search);
 const SelfId = urlParams.get("id");
+//获取头像
 function getSelftImg(id) {
   return fetch(`http://localhost:3000/user/getSelfImg?id=${id}`, {
     headers: {
@@ -34,6 +35,21 @@ getSelftImg(SelfId)
   .catch((error) => {
     console.error("错误:", error);
   });
+//获取名字
+function getSelfName(id) {
+  return fetch(`http://localhost:3000/user/getSelfName?id=${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => data.name)
+    .catch((error) => {
+      console.error("获取名字失败:", error);
+      throw error;
+    });
+}
 
 //socket.io 初始化
 const socket = io("http://localhost:3000", {
@@ -203,6 +219,8 @@ document
 
 //发送消息
 // 实时消息接收
+//消息弹窗
+const popUp = document.querySelector(".main .main-contain .pop-up");
 socket.on("new_message", (message) => {
   const rightContain = document.querySelector(
     ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
@@ -227,6 +245,37 @@ socket.on("new_message", (message) => {
   `;
   rightContain.appendChild(newMessage);
   rightContain.scrollTop = rightContain.scrollHeight;
+
+  //弹窗
+  if (senderId !== selfId) {
+    // 设置弹出框内容
+    const friendImg = "../img/春物壁纸.jpg";
+    getSelftImg(senderId)
+      .then((avatarUrl) => {
+        popUp.querySelector(".left .img-box img").src = `${avatarUrl}`;
+      })
+      .catch((error) => {
+        console.error("错误:", error);
+      });
+    const friendName = "friendsName";
+    getSelfName(senderId)
+      .then((name) => {
+        popUp.querySelector(".left .name").textContent = `${name}`;
+      })
+      .catch((error) => {
+        console.error("错误:", error);
+      });
+
+    popUp.querySelector(".right .message").textContent = message.content;
+
+    // 显示弹出框
+    popUp.style.display = "flex"; // 或 "block"，取决于你的 CSS
+
+    // 5秒后隐藏
+    setTimeout(() => {
+      popUp.style.display = "none";
+    }, 5000);
+  }
 });
 const sendTextArea = document.querySelector(
   ".main .main-contain > [data-box='message'] > .right > .right-contain > .input-box textarea"
