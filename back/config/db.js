@@ -46,15 +46,40 @@ const createTables = async (pool) => {
     `);
 
     await connection.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      status ENUM('wait', 'doing', 'over') DEFAULT 'wait',
+      progress int default 0 CHECK (progress >= 0 AND progress <= 100),
+      description TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS project_members (
+        project_id INT,
+        user_id INT,
+        role ENUM('creator', 'member') DEFAULT 'member', -- 可选：区分创建者和普通成员
+        PRIMARY KEY (project_id, user_id),
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+    `);
+
+    await connection.query(`
       CREATE TABLE IF NOT EXISTS \`groups\` (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
         created_by INT,
+        project_id INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (created_by) REFERENCES users(id)
-      )
+        FOREIGN KEY (created_by) REFERENCES users(id),
+        FOREIGN KEY (project_id) REFERENCES projects(id)
+        )
     `);
 
     await connection.query(`
@@ -92,13 +117,16 @@ const createTables = async (pool) => {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS branches (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        task_id INT,
+        project_id INT,
+        project_id INT,
         name VARCHAR(255) NOT NULL,
         description TEXT,
+        is_main BOOLEAN DEFAULT 0,
         created_by INT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         status ENUM('developing', 'ready_to_merge', 'merged') DEFAULT 'developing',
-        content TEXT,
+        FOREIGN KEY (project_id) REFERENCES projects(id),
         FOREIGN KEY (task_id) REFERENCES tasks(id),
         FOREIGN KEY (created_by) REFERENCES users(id)
       )
@@ -120,6 +148,23 @@ const createTables = async (pool) => {
         FOREIGN KEY (requested_by) REFERENCES users(id),
         FOREIGN KEY (reviewed_by) REFERENCES users(id)
       )
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS files (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      project_id INT,
+      branch_id INT,
+      name VARCHAR(255) NOT NULL,
+      type ENUM('file', 'folder') NOT NULL,
+      parent_id INT DEFAULT NULL,
+      content TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (project_id) REFERENCES projects(id),
+      FOREIGN KEY (branch_id) REFERENCES branches(id),
+      FOREIGN KEY (parent_id) REFERENCES files(id)
+    );
     `);
 
     await connection.query(`
@@ -175,8 +220,96 @@ const createTables = async (pool) => {
         status ENUM('pending', 'accepted') DEFAULT 'accepted',
         PRIMARY KEY (user_id, friend_id),
         FOREIGN KEY (user_id) REFERENCES users(id),
-        FOREIGN KEY (friend_id) REFERENCES users(id)
+        FOREIGN KEY (friend_id) REFERENCES users(id),
+        CONSTRAINT unique_friend_pair UNIQUE (user_id, friend_id)
       );
+    `);
+
+    await connection.query(`
+        CREATE TABLE IF NOT EXISTS tags(
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          color VARCHAR(7) NOT NULL, -- 颜色值，如 #ff0000
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+    await connection.query(`
+      -- 项目-标签关联表
+      CREATE TABLE IF NOT EXISTS project_tags (
+        project_id INT,
+        tag_id INT,
+        PRIMARY KEY (project_id, tag_id),
+        FOREIGN KEY (project_id) REFERENCES projects(id),
+        FOREIGN KEY (tag_id) REFERENCES tags(id)
+      );
+      `);
+
+    await connection.query(`
+      -- 分支-标签关联表
+      CREATE TABLE IF NOT EXISTS branch_tags (
+        branch_id INT,
+        tag_id INT,
+        PRIMARY KEY (branch_id, tag_id),
+        FOREIGN KEY (branch_id) REFERENCES branches(id),
+        FOREIGN KEY (tag_id) REFERENCES tags(id)
+      );
+`);
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS files (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        branch_id INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        type ENUM('file', 'folder') NOT NULL,
+        parent_id INT DEFAULT NULL,
+        content TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES files(id) ON DELETE CASCADE
+    );
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pull_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    source_branch_id INT NOT NULL,  -- 源分支
+    target_branch_id INT NOT NULL,  -- 目标分支
+    creator_id INT NOT NULL,        -- 创建者（作者）
+    status ENUM('wait', 'doing', 'over') DEFAULT 'wait',
+    deadline DATE DEFAULT NULL,     -- 截止日期
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (source_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
+);
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pull_request_tags (
+    pull_request_id INT NOT NULL,
+    tag_id INT NOT NULL,
+    PRIMARY KEY (pull_request_id, tag_id),
+    FOREIGN KEY (pull_request_id) REFERENCES pull_requests(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+);
+    `);
+
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS pull_request_members (
+    pull_request_id INT NOT NULL,
+    user_id INT NOT NULL,
+    PRIMARY KEY (pull_request_id, user_id),
+    FOREIGN KEY (pull_request_id) REFERENCES pull_requests(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
     `);
 
     console.log("所有表已成功创建或已存在");

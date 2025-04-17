@@ -29,7 +29,7 @@ function authenticateToken(req, res, next) {
 }
 
 function generateToken(user) {
-  return jwt.sign({ id: user.id }, getSecretKey(), { expiresIn: "1h" });
+  return jwt.sign({ id: user.id }, getSecretKey(), { expiresIn: "6h" });
 }
 
 module.exports = { authenticateToken, generateToken };

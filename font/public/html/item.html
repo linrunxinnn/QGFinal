@@ -224,24 +224,9 @@
                   <div class="drop-down" style="display: none">
                     <span>切换分支</span>
                     <div class="input-box">
-                      <svg
-                        t="1744531677227"
-                        class="icon"
-                        viewBox="0 0 1024 1024"
-                        version="1.1"
-                        xmlns="http://www.w3.org/2000/svg"
-                        p-id="27474"
-                        width="20"
-                        height="20"
-                      >
-                        <path
-                          d="M512 858.3168c-194.816 0-352-166.2464-352-370.4832S317.184 117.3504 512 117.3504s352 166.2464 352 370.4832-157.184 370.4832-352 370.4832z m0-64c158.6688 0 288-136.8576 288-306.4832 0-169.6768-129.3312-306.4832-288-306.4832S224 318.1568 224 487.8336c0 169.6256 129.3312 306.4832 288 306.4832zM717.312 799.9488a32 32 0 0 1 46.4896-43.9808l91.4432 96.7168a32 32 0 0 1-46.4896 43.9808l-91.4432-96.768z"
-                          fill="#bfbfbf"
-                          p-id="27475"
-                        ></path>
-                      </svg>
                       <input type="text" placeholder="查找分支" />
                     </div>
+                    <div class="branch-list"></div>
                   </div>
                 </div>
                 <div class="document">
@@ -563,26 +548,20 @@
             </div>
             <div class="pull-list">
               <div class="head">
-                <select name="作者" id="author">
-                  <option value="作者">作者</option>
-                  <option value="作者1">作者1</option>
-                  <option value="作者2">作者2</option>
-                </select>
-                <select name="状态" id="status">
-                  <option value="状态">状态</option>
-                  <option value="状态1">状态1</option>
-                  <option value="状态2">状态2</option>
-                </select>
-                <select name="标签" id="tag">
-                  <option value="标签">标签</option>
-                  <option value="标签1">标签1</option>
-                  <option value="标签2">标签2</option>
-                </select>
-                <select name="分支" id="branch">
-                  <option value="分支">分支</option>
-                  <option value="分支1">分支1</option>
-                  <option value="分支2">分支2</option>
-                </select>
+                <div class="head">
+                  <select name="author" id="author">
+                    <option value="">作者</option>
+                  </select>
+                  <select name="status" id="status">
+                    <option value="">状态</option>
+                  </select>
+                  <select name="tag" id="tag">
+                    <option value="">标签</option>
+                  </select>
+                  <select name="branch" id="branch">
+                    <option value="">分支</option>
+                  </select>
+                </div>
               </div>
               <div class="list">
                 <div class="item">
@@ -640,9 +619,9 @@
             <div class="new-pull-box">
               <div class="head">
                 <div class="left">
-                  <select name="拉取" id="">
-                    <option value="拉取">拉取</option>
-                    <option value="合并">合并</option>
+                  <select name="action" id="action">
+                    <option value="pull-box">拉取</option>
+                    <option value="merge-box">合并</option>
                   </select>
                   <div class="pull-box">
                     <div class="from">
@@ -668,50 +647,11 @@
                       </div>
                       <div class="drop-down" style="display: none"></div>
                     </div>
-                    <svg
-                      t="1744548803175"
-                      class="icon"
-                      viewBox="0 0 1024 1024"
-                      version="1.1"
-                      xmlns="http://www.w3.org/2000/svg"
-                      p-id="49392"
-                      width="20"
-                      height="20"
-                    >
-                      <path
-                        d="M584.533333 512l-302.933333 302.933333L341.333333 874.666667l302.933334-302.933334 59.733333-59.733333-59.733333-59.733333L341.333333 145.066667 281.6 209.066667l302.933333 302.933333z"
-                        fill="#8a8a8a"
-                        p-id="49393"
-                      ></path>
-                    </svg>
-                    <div class="to">
-                      <div class="icon">
-                        <span>到:</span>
-                        <span class="select-to">main</span>
-                        <svg
-                          t="1744549019860"
-                          class="icon"
-                          viewBox="0 0 1024 1024"
-                          version="1.1"
-                          xmlns="http://www.w3.org/2000/svg"
-                          p-id="50526"
-                          width="16"
-                          height="16"
-                        >
-                          <path
-                            d="M222.634667 301.226667l289.621333 289.621333L801.877333 301.226667l72.362667 72.448L512.256 735.573333 150.186667 373.76z"
-                            fill="#bfbfbf"
-                            p-id="50527"
-                          ></path>
-                        </svg>
-                      </div>
-                      <div class="drop-down" style="display: none"></div>
-                    </div>
                   </div>
                   <div class="merge-box" style="display: none">
                     <div class="from">
                       <div class="icon">
-                        <span>根据:</span>
+                        <span>合并:</span>
                         <span class="select-from">main</span>
                         <svg
                           t="1744549019860"
@@ -793,51 +733,13 @@
                   ></textarea>
                 </div>
                 <div class="tag-box">
+                  <span>已添加标签</span>
                   <div class="input-tag">
-                    <span
-                      data-tag="doing"
-                      style="background-color: #e67700; color: #fff"
-                      >进行中</span
-                    >
-                    <span
-                      data-tag="doing"
-                      style="background-color: #e67700; color: #fff"
-                      >进行中</span
-                    >
-                    <span
-                      data-tag="over"
-                      style="background-color: #862e9c; color: #fff"
-                      >已完成</span
-                    >
-                    <span
-                      待办
-                      data-tag="wait"
-                      style="background-color: #74b816; color: #fff"
-                      >待办</span
-                    >
+                    
                   </div>
+                  <span>可选标签</span>
                   <div class="tag-list">
-                    <span
-                      data-tag="doing"
-                      style="background-color: #e67700; color: #fff"
-                      >进行中</span
-                    >
-                    <span
-                      data-tag="over"
-                      style="background-color: #862e9c; color: #fff"
-                      >已完成</span
-                    >
-                    <span
-                      待办
-                      data-tag="wait"
-                      style="background-color: #74b816; color: #fff"
-                      >待办</span
-                    >
-                    <span
-                      data-tag="debug"
-                      style="background-color: #e67700; color: #fff"
-                      >debug</span
-                    >
+                    
                   </div>
                 </div>
                 <div class="responsibility">
@@ -863,7 +765,7 @@
                         </svg>
                       </div>
                     </div>
-                    <div class="drop-down" style="display: none"></div>
+                    <div class="drop-down"></div>
                   </div>
                   <div class="manager-list">
                     <div class="item">
@@ -917,7 +819,9 @@
         <div class="item" data-box="work" style="display: none"></div>
         <div class="item" data-box="report" style="display: none"></div>
         <div class="item" data-box="set" style="display: none"></div>
-      </div>
+        
     </div>
+    <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+    <script src="../js/item.js"></script>
   </body>
 </html>
