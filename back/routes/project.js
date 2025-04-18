@@ -254,7 +254,7 @@ router.get("/branches/:projectId", checkProjectMembership, async (req, res) => {
         b.status,
         b.is_main
       FROM branches b
-      JOIN users u ON u.id = b.created_by
+      LEFT JOIN users u ON u.id = b.created_by
       WHERE b.project_id = ?
       ORDER BY b.is_main DESC, b.created_at
       `,
@@ -548,5 +548,34 @@ router.get("/tags/:projectId", checkProjectMembership, async (req, res) => {
     res.status(500).json({ success: false, error: "服务器错误" });
   }
 });
+
+// 获取用户在项目中的角色
+router.get(
+  "/members/:projectId/role",
+  checkProjectMembership,
+  async (req, res) => {
+    const projectId = req.params.projectId;
+    const userId = req.user.id;
+
+    try {
+      const db = await getDb();
+      const [member] = await db.query(
+        `SELECT role FROM project_members WHERE project_id = ? AND user_id = ?`,
+        [projectId, userId]
+      );
+
+      if (member.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, error: "用户不是项目成员" });
+      }
+
+      res.json({ success: true, role: member[0].role });
+    } catch (error) {
+      console.error("获取用户角色失败:", error);
+      res.status(500).json({ success: false, error: "服务器错误" });
+    }
+  }
+);
 
 module.exports = router;

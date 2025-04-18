@@ -1019,3 +1019,592 @@ nav {
   transition: all 0.2s ease-in-out;
   cursor: pointer;
 }
+
+/* 规划页面 */
+.main .main-contain [data-box="program"] {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  height: 100%;
+  position: relative;
+  /* overflow: hidden; */
+  .input-box {
+    width: 100%;
+    padding: 5px 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+    input {
+      flex: 1;
+      border: none;
+      outline: none;
+      background-color: transparent;
+      font-size: 16px;
+      color: #495057;
+    }
+    button {
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: #007bff;
+      border: none;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 550;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+  }
+  .input-box:hover {
+    border: 1px solid #adb5bd;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+  }
+  .add-program {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    border-radius: 20px;
+    background-color: #f8f9fa;
+    border: #007bff solid 1px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.24);
+    transition: all 0.2s ease-in-out;
+    z-index: 10;
+    > select {
+      width: 100%;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      color: #495057;
+      outline: none;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      background-color: #f8f9fa;
+    }
+    .input-box {
+      padding: 5px 10px;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      border: none;
+      outline: none;
+      flex-direction: column;
+      border-radius: 5px;
+      transition: all 0.2s ease-in-out;
+      input {
+        width: 100%;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #495057;
+        border: none;
+        outline: none;
+      }
+      textarea {
+        width: 100%;
+        height: 150px;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #495057;
+        border: none;
+        outline: none;
+        background-color: #f8f9fa;
+      }
+    }
+    .manager {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      font-size: 13px;
+      white-space: nowrap;
+      color: #212529;
+      select {
+        flex: 1;
+        padding: 3px 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        transition: all 0.2s ease-in-out;
+      }
+    }
+    .deadline {
+      width: 100%;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      white-space: nowrap;
+      color: #212529;
+      font-size: 13px;
+      input {
+        flex: 1;
+        padding: 3px 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        transition: all 0.2s ease-in-out;
+      }
+    }
+    .icon {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      .add-icon {
+        padding: 5px 10px;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 550;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+      }
+      .add-icon:hover {
+        background-color: #0056b3;
+        transition: all 0.2s ease-in-out;
+      }
+    }
+  }
+  .add-program:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+  }
+}
+
+.main .main-contain [data-box="program"] .program-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  /* overflow: hidden; */
+  gap: 10px;
+  padding: 10px;
+  /* flex: 1; */
+  height: calc(100vh - 100px);
+  .program-list {
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 10px;
+    .head {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      .circle {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+      }
+      .title {
+        font-size: 16px;
+        font-weight: 550;
+        color: #212529;
+      }
+      .item-num {
+        font-size: 12px;
+        color: #868e96;
+        border: 1px solid #ced4da;
+        padding: 0 3px;
+        border-radius: 5px;
+      }
+    }
+    .add-icon {
+      font-size: 14px;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 5px;
+      transition: all 0.2s ease-in-out;
+    }
+    .add-icon:hover {
+      background-color: #f1f3f5;
+      transition: all 0.2s ease-in-out;
+    }
+  }
+}
+
+.main
+  .main-contain
+  [data-box="program"]
+  .program-box
+  .program-list
+  > .item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  > .item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      .drop-down {
+        position: absolute;
+        z-index: 10;
+        left: 100%;
+        transform: translateX(-10%);
+        top: 100%;
+        padding: 10px 10px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        border: 1px solid #ced4da;
+        width: 200px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        > .item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 5px 10px;
+          border-radius: 5px;
+          transition: all 0.2s ease-in-out;
+          cursor: pointer;
+        }
+      }
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 550;
+      color: #212529;
+    }
+    .message-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 5px;
+      .message {
+        font-size: 14px;
+        color: #212529;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .time {
+        font-size: 12px;
+        color: #868e96;
+      }
+    }
+  }
+  .item:hover {
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transform: scale(1.01);
+    transition: all 0.2s ease-in-out;
+  }
+}
+.main
+  .main-contain
+  [data-box="program"]
+  .program-box
+  .program-list
+  > .item-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 工作区 */
+.main .main-contain [data-box="work"] {
+  padding: 10px;
+  display: flex;
+  gap: 10px;
+  .nav {
+    min-width: 200px;
+    max-width: 400px;
+  }
+}
+
+.main .main-contain [data-box="work"] .nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #fff;
+  select {
+    padding: 5px 10px;
+    border-radius: 5px;
+    width: 100%;
+    border: 1px solid #ced4da;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+  }
+  > .top .document {
+    /* 文件树容器 */
+    width: 100%;
+    overflow: auto;
+    padding: 10px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+
+    /* 文件/文件夹项 */
+    .document-item {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: background-color 0.1s ease;
+    }
+
+    /* 文件夹和文件区分 */
+    .document-item.folder {
+      font-weight: 500; /* 文件夹稍加粗 */
+      font-size: 14px;
+    }
+
+    .document-item.file {
+      font-weight: 400;
+    }
+
+    /* 消息区域（包含箭头/图标和名称） */
+    .document-item .message {
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+    }
+
+    /* 展开/收起箭头 */
+    .document-item .arrow {
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      color: #858585;
+      font-size: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    /* 箭头旋转效果（可选，若需要动态旋转） */
+    .document-item .arrow.open {
+      transform: rotate(90deg);
+    }
+
+    /* 文件图标 */
+    .document-item .icon {
+      margin-right: 8px;
+      flex-shrink: 0;
+    }
+
+    /* 文件/文件夹名称 */
+    .document-item .name {
+      flex-grow: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 子节点容器 */
+    .document-item .children {
+      margin-left: 20px; /* 与 padding-left 配合，形成缩进效果 */
+    }
+
+    /* 隐藏子节点 */
+    .document-item .children[style*="display: none"] {
+      display: none !important;
+    }
+  }
+  > .top .document::-webkit-scrollbar {
+    display: none;
+  }
+  > .commit-record {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 30%;
+    overflow-y: auto;
+    .head {
+      .title {
+        .circle {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+        }
+        display: flex;
+        gap: 2px;
+        align-items: center;
+        font-size: 14px;
+        font-weight: 550;
+      }
+      position: sticky;
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border-radius: 5px 5px 0 0;
+      background-color: #f1f3f5;
+      font-size: 14px;
+      .icon-list {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        > .icon {
+          display: flex;
+          align-items: center;
+          position: relative;
+          padding: 3px;
+          border-radius: 5px;
+          transition: all 0.2s ease-in-out;
+          cursor: pointer;
+          .drop-down {
+            opacity: 0;
+            position: absolute;
+            z-index: 10;
+            top: 100%;
+            right: 50%;
+            transform: translateX(30%);
+            padding: 2px 3px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.5s ease-in-out;
+          }
+        }
+        > .icon:hover {
+          background-color: #e9ecef;
+          transition: all 0.2s ease-in-out;
+          .drop-down {
+            opacity: 1;
+            transition: all 0.5s ease-in-out;
+          }
+        }
+      }
+    }
+    .record-box {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 5px 0;
+      font-size: 14px;
+      .item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px 10px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+      }
+      .circle {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      .item:hover {
+        background-color: #f1f3f5;
+        transition: all 0.2s ease-in-out;
+      }
+    }
+  }
+  > .commit-record::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.main .main-contain [data-box="work"] .edit {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 5px;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px 10px;
+    > .icon {
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 550;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+    > .icon:hover {
+      background-color: #0056b3;
+      transition: all 0.2s ease-in-out;
+    }
+  }
+  input {
+    padding: 5px 10px;
+    border: 1px solid #ced4da;
+    outline: none;
+    border: none;
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    color: #212529;
+  }
+  span {
+    width: 100%;
+    height: 1px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+  }
+  textarea {
+    flex: 1;
+    padding: 5px 10px;
+    border: 1px solid #ced4da;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    color: #212529;
+    line-height: 1.5;
+  }
+  textarea::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.164);
+  z-index: 2;
+}

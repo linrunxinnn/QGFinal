@@ -96,7 +96,7 @@ router.get("/initialize/messageList", async (req, res) => {
       [userId, userId, userId, userId, userId, userId, userId, userId]
     );
 
-    console.log("Fetched message list:", rows);
+    // console.log("Fetched message list:", rows);
     res.json(rows);
   } catch (err) {
     console.error("查询好友失败:", err);

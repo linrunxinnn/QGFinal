@@ -49,6 +49,8 @@ const createTables = async (pool) => {
       CREATE TABLE IF NOT EXISTS projects (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
+      description TEXT,
+      progress INT DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
       status ENUM('wait', 'doing', 'over') DEFAULT 'wait',
       progress int default 0 CHECK (progress >= 0 AND progress <= 100),
       description TEXT,
@@ -107,7 +109,6 @@ const createTables = async (pool) => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         due_date DATE,
-        progress INT DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
         FOREIGN KEY (assigned_to) REFERENCES users(id),
         FOREIGN KEY (group_id) REFERENCES\`groups\`(id) ,
         FOREIGN KEY (created_by) REFERENCES users(id)
@@ -197,9 +198,9 @@ const createTables = async (pool) => {
       CREATE TABLE IF NOT EXISTS task_dependencies (
         id INT AUTO_INCREMENT PRIMARY KEY,
         task_id INT,
-        depends_on_task_id INT,
+        depends_on_project_id INT,
         FOREIGN KEY (task_id) REFERENCES tasks(id),
-        FOREIGN KEY (depends_on_task_id) REFERENCES tasks(id)
+        FOREIGN KEY (depends_on_project_id) REFERENCES projects(id)
       )
     `);
 

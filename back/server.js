@@ -11,6 +11,7 @@ const { Server } = require("socket.io");
 const logRouter = require("./routes/log");
 const userRouter = require("./routes/user");
 const projectRouter = require("./routes/project");
+const taskRouter = require("./routes/program");
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -59,6 +60,7 @@ global.io = io;
 app.use("/log", logRouter);
 app.use("/user", authenticateToken, userRouter);
 app.use("/project", authenticateToken, projectRouter);
+app.use("/tasks", authenticateToken, taskRouter);
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

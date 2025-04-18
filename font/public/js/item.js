@@ -19,6 +19,14 @@ navItems.forEach((item) => {
         if (id === "pull") {
           initPullRequests();
         }
+        if (id === "program") {
+          box.style.display = "flex";
+          initProgram();
+        }
+        if (id === "work") {
+          box.style.display = "flex";
+          // initWorkSpace();
+        }
       }
     });
   });
@@ -354,103 +362,6 @@ let selectedTags = new Set(); // 存储已选标签
 let selectedManagers = new Set(); // 存储已选负责人
 
 // 初始化拉取请求页面
-// function initPullRequests() {
-//   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
-//   if (!pullBox) {
-//     console.error("未找到拉取请求容器");
-//     return;
-//   }
-
-//   const urlParams = new URLSearchParams(window.location.search);
-//   const projectId = urlParams.get("id");
-
-//   // 获取拉取请求数据
-//   fetch(`http://localhost:3000/project/pulls/${projectId}`, {
-//     method: "GET",
-//     headers: {
-//       Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       "Content-Type": "application/json",
-//     },
-//   })
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error(`获取拉取请求失败: ${response.statusText}`);
-//       }
-//       return response.json();
-//     })
-//     .then((data) => {
-//       if (!data.success) {
-//         throw new Error("获取拉取请求数据失败");
-//       }
-//       pullRequests = data.pullRequests || [];
-//       renderPullRequests(pullRequests);
-//       initFilterOptions(pullRequests);
-//     })
-//     .catch((error) => {
-//       console.error("获取拉取请求错误:", error);
-//       pullBox.querySelector(".pull-list .list").innerHTML = `
-//         <div class="error">加载失败：${error.message}</div>
-//       `;
-//     });
-
-//   // 获取分支数据
-//   fetch(`http://localhost:3000/project/branches/${projectId}`, {
-//     method: "GET",
-//     headers: {
-//       Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       "Content-Type": "application/json",
-//     },
-//   })
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error(`获取分支数据失败: ${response.statusText}`);
-//       }
-//       return response.json();
-//     })
-//     .then((data) => {
-//       if (!data.success) {
-//         throw new Error("获取分支数据失败");
-//       }
-//       branches = data.branches || [];
-//       initNewPullRequest();
-//     })
-//     .catch((error) => {
-//       console.error("获取分支数据错误:", error);
-//       // 显示错误信息，但不阻塞页面
-//       pullBox.querySelector(".new-pull-box").innerHTML += `
-//         <div class="error">无法加载分支：${error.message}</div>
-//       `;
-//     });
-
-//   // 获取用户数据（负责人）
-//   fetch(`http://localhost:3000/project/members/${projectId}`, {
-//     method: "GET",
-//     headers: {
-//       Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       "Content-Type": "application/json",
-//     },
-//   })
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error(`获取成员数据失败: ${response.statusText}`);
-//       }
-//       return response.json();
-//     })
-//     .then((data) => {
-//       if (!data.success) {
-//         throw new Error("获取成员数据失败");
-//       }
-//       users = data.members || [];
-//       initResponsibility();
-//     })
-//     .catch((error) => {
-//       console.error("获取成员数据错误:", error);
-//       // 显示错误信息，但不阻塞页面
-//       pullBox.querySelector(".new-pull-box").innerHTML += `
-//         <div class="error">无法加载成员：${error.message}</div>
-//       `;
-//     });
-// }
 let isNewPullRequestInitialized = false; // 防止重复初始化
 
 function initPullRequests() {
@@ -754,6 +665,7 @@ function initNewPullRequest() {
   }
 
   // 填充“根据（从哪里拉取）”下拉菜单
+  // console.log("branches:", branches);
   fromDropdown.innerHTML = branches
     .map(
       (branch) => `
@@ -1160,3 +1072,6 @@ function initResponsibility() {
 }
 
 initPullRequests();
+
+// ---------------------------------------------------------------
+// 任务页面
