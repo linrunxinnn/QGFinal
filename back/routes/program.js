@@ -138,7 +138,7 @@ router.get("/:projectId", checkProjectMembership, async (req, res) => {
     if (isAdmin) {
       // 管理员查看所有任务
       query = `
-        SELECT 
+        SELECT
           t.id, t.title, t.description, t.status, t.priority, t.due_date,
           t.assigned_to, u.name AS assigned_to_name, t.created_at
         FROM tasks t
@@ -152,7 +152,7 @@ router.get("/:projectId", checkProjectMembership, async (req, res) => {
     } else {
       // 普通组员只查看分配给自己的任务
       query = `
-        SELECT 
+        SELECT
           t.id, t.title, t.description, t.status, t.priority, t.due_date,
           t.assigned_to, u.name AS assigned_to_name, t.created_at
         FROM tasks t
