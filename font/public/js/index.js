@@ -31,6 +31,9 @@ getSelftImg(SelfId)
   .then((avatarUrl) => {
     SelfImg = avatarUrl;
     document.querySelector("nav > .head > .img-box img").src = `${SelfImg}`;
+    document.querySelector(
+      "nav > .head .img-box .drop-down img"
+    ).src = `${SelfImg}`;
   })
   .catch((error) => {
     console.error("错误:", error);
@@ -50,6 +53,14 @@ function getSelfName(id) {
       throw error;
     });
 }
+
+getSelfName(SelfId)
+  .then((name) => {
+    document.querySelector("nav > .head  .name").textContent = `${name}`;
+  })
+  .catch((error) => {
+    console.error("错误:", error);
+  });
 
 //socket.io 初始化
 const socket = io("http://localhost:3000", {
@@ -76,18 +87,307 @@ navList.forEach((item) => {
 });
 
 //添加好友
+// 导航栏添加功能
 const navAddIcon = document.querySelector("nav > .head > .add > .nav-icon");
 const navAddIconDrop = document.querySelector(
   "nav > .head > .add > .drop-down"
 );
+const overlay = document.querySelector(".overlay");
+const addModal = document.querySelector("body > .add");
+const friendModal = document.querySelector("body > .add .fried");
+const friendSearchInput = document.querySelector(
+  "body > .add .fried .input-box input"
+);
+const friendSearchResult = document.querySelector("body > .add .fried .result");
+
+// 点击导航栏“添加”图标，显示下拉菜单
 navAddIcon.addEventListener("click", (e) => {
-  e.stopPropagation(); // 阻止事件冒泡
+  e.stopPropagation();
   navAddIconDrop.style.display = "block";
   navAddIconDrop.style.opacity = "1";
 });
-// 点击其他地方时关闭下拉菜单
-document.addEventListener("click", () => {
-  navAddIconDrop.style.display = "none";
+
+// 点击其他地方关闭下拉菜单
+document.addEventListener("click", (e) => {
+  if (!navAddIcon.contains(e.target) && !navAddIconDrop.contains(e.target)) {
+    navAddIconDrop.style.display = "none";
+    navAddIconDrop.style.opacity = "0";
+  }
+});
+
+// 点击“添加好友”选项，显示好友搜索弹窗
+document
+  .querySelector("nav .head .add .drop-down .item[data-box='add-friend']")
+  .addEventListener("click", (e) => {
+    e.stopPropagation();
+    navAddIconDrop.style.display = "none";
+    overlay.style.display = "block";
+    addModal.style.display = "block";
+    friendModal.style.display = "block";
+    friendSearchResult.innerHTML = ""; // 清空搜索结果
+  });
+
+// 点击遮罩层关闭弹窗
+overlay.addEventListener("click", () => {
+  overlay.style.display = "none";
+  addModal.style.display = "none";
+  friendModal.style.display = "none";
+});
+
+// 搜索好友（防抖）
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+};
+
+friendSearchInput.addEventListener(
+  "input",
+  debounce(async () => {
+    const account = friendSearchInput.value.trim();
+    if (!account) {
+      friendSearchResult.innerHTML = "";
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/user/search?account=${account}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
+      if (!data.success) {
+        friendSearchResult.innerHTML = `<div class="error">搜索失败：${data.error}</div>`;
+        return;
+      }
+
+      // 渲染搜索结果
+      friendSearchResult.innerHTML = "";
+      if (data.users.length === 0) {
+        friendSearchResult.innerHTML = `<div class="no-result">未找到用户</div>`;
+        return;
+      }
+
+      data.users.forEach((user) => {
+        const item = document.createElement("div");
+        item.classList.add("item");
+        item.innerHTML = `
+          <div class="message">
+            <div class="img-box">
+              <img src="${
+                user.avatar_url || "../img/default-avatar.jpg"
+              }" alt="" />
+            </div>
+            <div class="name">${user.name}</div>
+          </div>
+          <div class="icon" data-user-id="${user.id}">
+            <div class="add-icon">添加</div>
+            <div class="already-icon" style="display: none">已添加</div>
+          </div>
+        `;
+        friendSearchResult.appendChild(item);
+
+        // 添加好友
+        item.querySelector(".add-icon").addEventListener("click", async (e) => {
+          const userId = item.querySelector(".icon").dataset.userId;
+          try {
+            const response = await fetch(`http://localhost:3000/user/add`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ friendId: userId }),
+            });
+            const result = await response.json();
+            if (result.success) {
+              e.target.style.display = "none";
+              item.querySelector(".already-icon").style.display = "block";
+            } else {
+              alert("添加失败：" + result.error);
+            }
+          } catch (error) {
+            console.error("添加好友失败:", error);
+            alert("添加好友失败：" + error.message);
+          }
+        });
+      });
+    } catch (error) {
+      console.error("搜索好友失败:", error);
+      friendSearchResult.innerHTML = `<div class="error">搜索失败：${error.message}</div>`;
+    }
+  }, 500)
+);
+
+// 修改用户名
+const personInfo = document.querySelector(".person-info");
+const nameInput = personInfo.querySelector(".name input");
+const nameSubmit = personInfo.querySelector(".name .submit");
+
+document
+  .querySelector("nav .drop-down .info .name")
+  .addEventListener("click", () => {
+    personInfo.style.display = "block";
+    nameInput.style.display = "flex";
+    personInfo.querySelector(".email").style.display = "none";
+    document.querySelector(".overlay").style.display = "block";
+  });
+
+nameSubmit.addEventListener("click", async () => {
+  const newName = nameInput.value.trim();
+  if (!newName) {
+    alert("请输入姓名");
+    return;
+  }
+
+  userId = SelfId;
+
+  try {
+    const response = await fetch("http://localhost:3000/user/update", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, name: newName }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "修改用户名失败");
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      alert("用户名修改成功");
+      document.querySelector(".head .name").textContent = newName;
+      personInfo.style.display = "none";
+    }
+  } catch (error) {
+    console.error("修改用户名出错:", error);
+    alert("修改用户名失败：" + error.message);
+  }
+});
+
+// // 修改邮箱
+// const emailSection = personInfo.querySelector(".email");
+// const emailInput = emailSection.querySelector(".email input");
+// const emailSubmit = emailSection.querySelector(".email .submit");
+
+// document.querySelector(".email").addEventListener("click", () => {
+//   personInfo.style.display = "block";
+//   emailSection.style.display = "flex";
+//   personInfo.querySelector(".name").style.display = "none";
+//   document.querySelector(".overlay").style.display = "block";
+// });
+
+// emailSubmit.addEventListener("click", async () => {
+//   const newEmail = emailInput.value.trim();
+//   if (!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+//     alert("请输入有效的邮箱地址");
+//     return;
+//   }
+
+//   try {
+//     const response = await fetch("http://localhost:3000/user/update", {
+//       method: "POST",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({ userId, email: newEmail }),
+//     });
+
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.error || "修改邮箱失败");
+//     }
+
+//     const result = await response.json();
+//     if (result.success) {
+//       alert("邮箱修改成功");
+//       personInfo.style.display = "none";
+//       emailSection.style.display = "none";
+//       document.querySelector(".overlay").style.display = "none";
+//     }
+//   } catch (error) {
+//     console.error("修改邮箱出错:", error);
+//     alert("修改邮箱失败：" + error.message);
+//   }
+// });
+
+// 退出登录
+document
+  .querySelector(".leave.icon:last-child")
+  .addEventListener("click", () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("token");
+    alert("已退出登录");
+    window.location.href = "/font/public/html/login.html"; // 重定向到登录页面
+  });
+
+// 上传头像
+const fileInput = document.querySelector(
+  "nav .head .img-box .drop-down #file-input"
+);
+document
+  .querySelector("nav .head .img-box .drop-down img")
+  .addEventListener("click", () => {
+    fileInput.click();
+  });
+
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("avatar", file);
+  formData.append("userId", SelfId);
+
+  try {
+    const response = await fetch("http://localhost:3000/user/uploadAvatar", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "上传头像失败");
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      const avatarPath = result.avatarPath; // 直接使用 /img/<filename>
+      document.querySelectorAll("nav .head img").forEach((img) => {
+        img.src = avatarPath;
+        document.querySelector("nav .head .img-box .drop-down img").src =
+          avatarPath;
+      });
+      alert("头像上传成功");
+    }
+  } catch (error) {
+    console.error("上传头像出错:", error);
+    alert("上传头像失败：" + error.message);
+  }
+});
+
+// 点击遮罩层关闭弹窗
+document.querySelector(".overlay").addEventListener("click", () => {
+  personInfo.style.display = "none";
+  emailSection.style.display = "none";
+  personInfo.querySelector(".name").style.display = "none";
+  document.querySelector(".overlay").style.display = "none";
 });
 
 //初始化消息列表
@@ -103,13 +403,6 @@ document.addEventListener("click", () => {
 
   const token = localStorage.getItem("token");
   const userId = SelfId;
-
-  // if (!token || !userId) {
-  //   console.error("缺少token或用户ID", { token, userId });
-  //   alert("请先登录");
-  //   window.location.href = "/login.html";
-  //   return;
-  // }
 
   fetch(`http://localhost:3000/user/initialize/messageList?id=${userId}`, {
     headers: {
@@ -188,7 +481,6 @@ document
       else x.classList.remove("active");
     });
 
-    openChat(id, name);
     //right-contain部分display，向数据库获取获取聊天记录并渲染，head渲染
     const rightContain = document.querySelector(
       ".main .main-contain > [data-box='message'] > .right > .right-contain"
@@ -213,8 +505,16 @@ document
     )
       .then((res) => res.json())
       .then((data) => {
-        const { selfAvatar, friendAvatar, messages } = data;
+        // const { selfAvatar, friendAvatar, messages } = data;
+        const {
+          selfAvatar,
+          friendAvatar,
+          messages,
+          friendStatus,
+          needsApproval,
+        } = data;
 
+        console.log(needsApproval, friendStatus);
         const messageList = document.querySelector(
           ".main .main-contain > [data-box='message'] > .right > .right-contain > .show-box"
         );
@@ -234,6 +534,100 @@ document
             `;
           })
           .join("");
+        //将聊天记录滚动到底部
+        messageList.scrollTop = messageList.scrollHeight;
+
+        // 处理好友状态
+        const headMessage = rightContain.querySelector(".head > .message");
+        const iconDiv = headMessage.querySelector(".icon");
+        if (iconDiv) {
+          iconDiv.remove(); // 移除旧的 icon 元素
+        }
+
+        // 禁用消息发送功能
+        const messageInput = rightContain.querySelector(
+          ".input-wrapper textarea"
+        ); // 假设有一个输入框
+        const sendButton = rightContain.querySelector(".send-button"); // 假设有一个发送按钮
+        if (friendStatus !== "accepted") {
+          messageInput.disabled = true;
+          messageInput.placeholder = "请先成为好友才能发送消息";
+        } else {
+          messageInput.disabled = false;
+          messageInput.placeholder = "输入消息...";
+        }
+
+        if (friendStatus === "pending" && needsApproval.toString() === userId) {
+          // 当前用户需要通过好友请求
+          const pendingIcon = document.createElement("div");
+          pendingIcon.className = "icon";
+          pendingIcon.textContent = "未添加为好友";
+          headMessage.appendChild(pendingIcon);
+
+          pendingIcon.addEventListener("click", async () => {
+            try {
+              const response = await fetch(
+                `http://localhost:3000/user/accept`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({ friendId: id, userId: userId }),
+                }
+              );
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "接受好友请求失败");
+              }
+
+              const result = await response.json();
+              if (result.success) {
+                pendingIcon.remove(); // 移除按钮
+                messageInput.disabled = false;
+                messageInput.placeholder = "输入消息...";
+
+                // 刷新聊天记录
+                const refreshResponse = await fetch(
+                  `http://localhost:3000/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
+                  {
+                    headers: {
+                      Authorization: `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                  }
+                );
+                const refreshedData = await refreshResponse.json();
+                messageList.innerHTML = refreshedData.messages
+                  .map((m) => {
+                    const avatar =
+                      m.sender_id == userId
+                        ? refreshedData.selfAvatar
+                        : refreshedData.friendAvatar;
+                    return `
+                      <div class="text-item">
+                        <div class="img-box">
+                          <img src="${avatar}" />
+                        </div>
+                        <div class="message-box">
+                          <div class="text">${m.content}</div>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join("");
+
+                //将聊天记录滚动到底部
+                messageList.scrollTop = messageList.scrollHeight;
+              }
+            } catch (error) {
+              console.error("接受好友请求出错:", error);
+              alert("接受好友请求失败：" + error.message);
+            }
+          });
+        }
       })
       .catch((error) => console.error("加载聊天记录出错:", error));
   });
@@ -290,16 +684,31 @@ socket.on("new_message", (message) => {
     popUp.querySelector(".right .message").textContent = message.content;
 
     // 显示弹出框
-    popUp.style.display = "flex"; // 或 "block"，取决于你的 CSS
+    popUp.style.display = "flex";
 
     // 5秒后隐藏
     setTimeout(() => {
       popUp.style.opacity = "0";
       setTimeout(() => {
         popUp.style.display = "none";
-        popUp.style.opacity = "1"; // 重置透明度
-      }, 300); // 等待动画结束后再隐藏
+        popUp.style.opacity = "1";
+      }, 300);
     }, 5000);
+
+    // 点击弹出框时，跳转到对应的聊天界面
+    popUp.addEventListener("click", () => {
+      const messageList = document.querySelector(
+        ".main .main-contain > [data-box='message'] > .left > .message-list"
+      );
+      const item = Array.from(messageList.children).find(
+        (x) => x.dataset.id === senderId
+      );
+      if (item) {
+        item.click(); // 触发点击事件
+        //将聊天记录滚动到底部
+        messageList.scrollTop = messageList.scrollHeight;
+      }
+    });
   }
 });
 const sendTextArea = document.querySelector(
@@ -464,7 +873,6 @@ function initialProjectList() {
 initialProjectList();
 
 //创建项目
-const overlay = document.querySelector(".overlay");
 const createProjectBox = document.querySelector("body > .add-project");
 const createProjectButton = document.querySelector(
   ".main > .main-contain > [data-box='work'] > .head > .function .icon"

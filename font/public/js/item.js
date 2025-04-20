@@ -1,33 +1,41 @@
 let currentBranchId = null;
 
-//nav点击切换
-const navItems = document.querySelectorAll("nav > .nav-list .item");
-const itemBox = document.querySelectorAll(".main > .main-contain > .item");
-navItems.forEach((item) => {
-  item.addEventListener("click", () => {
-    navItems.forEach((i) => i.classList.remove("active"));
-    item.classList.add("active");
-    const id = item.dataset.box;
-    itemBox.forEach((box) => {
-      box.style.display = "none";
-      if (box.dataset.box === id) {
-        box.style.display = "block";
-        if (id === "main") {
-          box.style.display = "flex";
-          init();
+// item.js
+document.addEventListener("DOMContentLoaded", () => {
+  init(); // 初始加载项目页面
+  initPullRequests(); // 初始加载拉取请求页面
+
+  // 导航切换
+  const navItems = document.querySelectorAll("nav > .nav-list .item");
+  const itemBox = document.querySelectorAll(".main > .main-contain > .item");
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      navItems.forEach((i) => i.classList.remove("active"));
+      item.classList.add("active");
+      const id = item.dataset.box;
+      itemBox.forEach((box) => {
+        box.style.display = "none";
+        if (box.dataset.box === id) {
+          box.style.display =
+            id === "program" || id === "main" ? "flex" : "block";
+          if (id === "main") {
+            init();
+          }
+          if (id === "pull") {
+            initPullRequests();
+          }
+          if (id === "program") {
+            box.style.display = "flex";
+            setTimeout(() => {
+              initTasks();
+            }, 0);
+          }
+          if (id === "work") {
+            box.style.display = "flex";
+            // initWorkSpace();
+          }
         }
-        if (id === "pull") {
-          initPullRequests();
-        }
-        if (id === "program") {
-          box.style.display = "flex";
-          initProgram();
-        }
-        if (id === "work") {
-          box.style.display = "flex";
-          // initWorkSpace();
-        }
-      }
+      });
     });
   });
 });
@@ -272,6 +280,7 @@ function init() {
         branchNameSpan.textContent = "无分支";
       }
 
+      console.log("分支信息", project.branches);
       // 填充下拉菜单
       const branchList = dropdown.querySelector(".branch-list");
       branchList.innerHTML = `
@@ -292,9 +301,8 @@ function init() {
 
       // 下拉菜单交互
       selectIcon.addEventListener("click", (e) => {
+        dropdown.style.display = "flex";
         e.stopPropagation();
-        dropdown.style.display =
-          dropdown.style.display === "flex" ? "none" : "flex";
       });
       document.addEventListener("click", () => {
         dropdown.style.display = "none";
@@ -1072,6 +1080,3 @@ function initResponsibility() {
 }
 
 initPullRequests();
-
-// ---------------------------------------------------------------
-// 任务页面

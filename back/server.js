@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const fileUpload = require("express-fileupload");
 const { authenticateToken } = require("./middleware/auth");
 const cors = require("cors");
 const mysql = require("mysql2");
@@ -11,11 +12,13 @@ const { Server } = require("socket.io");
 const logRouter = require("./routes/log");
 const userRouter = require("./routes/user");
 const projectRouter = require("./routes/project");
-const taskRouter = require("./routes/program");
+const programRoutes = require("./routes/program");
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(fileUpload());
+app.use("/img", express.static(path.join(__dirname, "img")));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -60,7 +63,7 @@ global.io = io;
 app.use("/log", logRouter);
 app.use("/user", authenticateToken, userRouter);
 app.use("/project", authenticateToken, projectRouter);
-app.use("/tasks", authenticateToken, taskRouter);
+app.use("/program", authenticateToken, programRoutes);
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

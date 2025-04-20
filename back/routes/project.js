@@ -190,7 +190,7 @@ router.get("/init/:projectId", checkProjectMembership, async (req, res) => {
         b.status,
         b.is_main
       FROM branches b
-      JOIN users u ON u.id = b.created_by
+      LEFT JOIN users u ON u.id = b.created_by
       WHERE b.project_id = ?
       ORDER BY b.is_main DESC, b.created_at
       `,
