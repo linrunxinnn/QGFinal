@@ -907,7 +907,6 @@ nav .nav-list .item .icon {
 
 .add-project:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  border: #0056b3 solid 3px;
   transition: all 0.2s ease-in-out;
 }
 
@@ -952,6 +951,7 @@ nav .nav-list .item .icon {
   display: flex;
   flex-direction: column;
   padding: 10px 10px 0 10px;
+  z-index: 10;
   > .head {
     display: flex;
     align-items: center;

@@ -228,40 +228,47 @@ router.patch("/:taskId/status", checkProjectMembership, async (req, res) => {
 });
 
 // 删除任务
-router.delete("/:taskId", checkProjectMembership, async (req, res) => {
-  const taskId = parseInt(req.params.taskId, 10);
-  const userId = req.user.id;
+router.delete(
+  "/:projectId/:taskId",
+  checkProjectMembership,
+  async (req, res) => {
+    const projectId = parseInt(req.params.projectId, 10);
+    const taskId = parseInt(req.params.taskId, 10);
+    const userId = req.user.id;
 
-  try {
-    const db = await getDb();
+    try {
+      const db = await getDb();
 
-    // 验证任务是否存在且用户有权限操作
-    const [task] = await db.query(
-      `
+      // 验证任务是否存在且用户有权限操作
+      const [task] = await db.query(
+        `
       SELECT t.id, t.assigned_to
       FROM tasks t
       JOIN \`groups\` g ON t.group_id = g.id
       WHERE t.id = ? AND g.project_id = ?
       `,
-      [taskId, req.params.projectId]
-    );
+        [taskId, req.params.projectId]
+      );
 
-    if (task.length === 0) {
-      return res.status(404).json({ success: false, error: "任务不存在" });
+      if (task.length === 0) {
+        return res.status(404).json({ success: false, error: "任务不存在" });
+      }
+
+      if (task[0].assigned_to !== userId && req.membership.role !== "creator") {
+        return res
+          .status(403)
+          .json({ success: false, error: "无权删除此任务" });
+      }
+
+      // 删除任务
+      await db.query("DELETE FROM tasks WHERE id = ?", [taskId]);
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("删除任务失败:", error);
+      res.status(500).json({ success: false, error: "服务器错误" });
     }
-
-    if (task[0].assigned_to !== userId && req.membership.role !== "creator") {
-      return res.status(403).json({ success: false, error: "无权删除此任务" });
-    }
-
-    // 删除任务
-    await db.query("DELETE FROM tasks WHERE id = ?", [taskId]);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("删除任务失败:", error);
-    res.status(500).json({ success: false, error: "服务器错误" });
   }
-});
+);
 
 module.exports = router;

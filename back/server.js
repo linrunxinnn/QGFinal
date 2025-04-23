@@ -13,6 +13,7 @@ const logRouter = require("./routes/log");
 const userRouter = require("./routes/user");
 const projectRouter = require("./routes/project");
 const programRoutes = require("./routes/program");
+const editRouter = require("./routes/file");
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
@@ -56,6 +57,7 @@ io.on("connection", (socket) => {
     console.log(`用户 ${userId} 已断开`);
   });
 });
+//后台发给前端
 
 // 全局保存 io 实例给路由使用
 global.io = io;
@@ -64,6 +66,7 @@ app.use("/log", logRouter);
 app.use("/user", authenticateToken, userRouter);
 app.use("/project", authenticateToken, projectRouter);
 app.use("/program", authenticateToken, programRoutes);
+app.use("/files", authenticateToken, editRouter);
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);

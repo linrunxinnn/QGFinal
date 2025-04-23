@@ -13,19 +13,31 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(" ")[1]; // 提取 Bearer 后的 token
 
   if (!token) {
-    return res.status(401).json({ message: "未提供令牌" });
+    // return res.status(401).json({ message: "未提供令牌" });
+    return sendAuthRedirect(res);
   }
 
   jwt.verify(token, getSecretKey(), (err, user) => {
     if (err) {
       if (err.name === "TokenExpiredError") {
-        return res.status(403).json({ message: "令牌已过期" });
+        // return res.status(403).json({ message: "令牌已过期" });
+        return sendAuthRedirect(res);
       }
-      return res.status(403).json({ message: "无效的令牌" });
+      // return res.status(403).json({ message: "无效的令牌" });
+      return sendAuthRedirect(res);
     }
     req.user = user;
     next();
   });
+}
+
+// 发送认证重定向
+function sendAuthRedirect(res, redirectUrl = "/login") {
+  // 设置302临时重定向
+  res.redirect(
+    302,
+    `${redirectUrl}?from=${encodeURIComponent(req.originalUrl || "/")}`
+  );
 }
 
 function generateToken(user) {

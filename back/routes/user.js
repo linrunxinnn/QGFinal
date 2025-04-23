@@ -21,7 +21,7 @@ router.get("/getSelfImg", async (req, res) => {
     const [rows] = await db.query(`SELECT avatar_url FROM users WHERE id = ?`, [
       userId,
     ]);
-    console.log("Rows:", rows);
+    // console.log("Rows:", rows);
     if (rows.length > 0) {
       res.json({ avatar_url: rows[0].avatar_url });
     } else {
@@ -40,7 +40,7 @@ router.get("/getSelfName", async (req, res) => {
     const [rows] = await db.query(`SELECT name FROM users WHERE id = ?`, [
       userId,
     ]);
-    console.log("Rows:", rows);
+    // console.log("Rows:", rows);
     if (rows.length > 0) {
       res.json({ name: rows[0].name });
     } else {
@@ -252,7 +252,7 @@ router.get("/initialize/projectList", async (req, res) => {
 
     query += ` ORDER BY p.created_at DESC`;
 
-    console.log(`执行查询: ${query}, 参数: ${queryParams}`);
+    // console.log(`执行查询: ${query}, 参数: ${queryParams}`);
     const [projects] = await db.query(query, queryParams);
 
     if (!projects || projects.length === 0) {
@@ -268,12 +268,31 @@ router.get("/initialize/projectList", async (req, res) => {
            WHERE pt.project_id = ?`,
           [project.project_id]
         );
+
+        // 查询项目的所有任务并计算进度
+        const [tasks] = await db.query(
+          `SELECT status FROM tasks WHERE project_id = ?`,
+          [project.project_id]
+        );
+
+        // console.log("项目任务列表:", tasks, "项目ID:", project.project_id);
+
+        // 计算任务的完成进度
+        const totalTasks = tasks.length;
+        const completedTasks = tasks.filter(
+          (task) => task.status === "over"
+        ).length;
+        const progress =
+          totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+        // console.log("项目进度", progress);
+
         return {
           project_id: project.project_id,
           project_name: project.project_name,
           project_description: project.description,
           created_at: project.created_at.toISOString().split("T")[0],
-          progress: project.progress,
+          progress: progress.toFixed(2),
           status: project.status,
           tags: tags || [],
         };

@@ -140,6 +140,8 @@ const createTables = async (pool) => {
         task_id INT,
         requested_by INT,
         reviewed_by INT,
+        target_branch_id INT,
+        source_branch_id INT,
         status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
         conflict TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -173,13 +175,15 @@ const createTables = async (pool) => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         task_id INT,
         branch_id INT,
+        version INT,
         operation_type ENUM('create', 'update', 'delete', 'merge') NOT NULL,
         user_id INT,
         description TEXT,
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (task_id) REFERENCES tasks(id),
         FOREIGN KEY (branch_id) REFERENCES branches(id),
-        FOREIGN KEY (user_id) REFERENCES users(id)
+        FOREIGN KEY (user_id) REFERENCES users(id),
+        FOREIGN KEY (version_id) REFERENCES versions(id) ON DELETE SET NULL
       )
     `);
 
@@ -276,20 +280,19 @@ const createTables = async (pool) => {
     await connection.query(`
       CREATE TABLE IF NOT EXISTS pull_requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    project_id INT NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    source_branch_id INT NOT NULL,  -- 源分支
-    target_branch_id INT NOT NULL,  -- 目标分支
-    creator_id INT NOT NULL,        -- 创建者（作者）
-    status ENUM('wait', 'doing', 'over') DEFAULT 'wait',
-    deadline DATE DEFAULT NULL,     -- 截止日期
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (source_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
-    FOREIGN KEY (target_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
-    FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
+  project_id INT NOT NULL,
+  source_branch_id INT NOT NULL,
+  target_branch_id INT NOT NULL,
+  creator_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  status ENUM('wait', 'approved', 'merged', 'closed') DEFAULT 'wait',
+  deadline DATE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+  FOREIGN KEY (source_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+  FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
 );
     `);
 
@@ -311,6 +314,39 @@ const createTables = async (pool) => {
     FOREIGN KEY (pull_request_id) REFERENCES pull_requests(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+    `);
+
+    await connection.query(`
+      -- 版本表，存储每个提交的快照
+      CREATE TABLE IF NOT EXISTS versions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        project_id INT NOT NULL,
+        branch_id INT NOT NULL,
+        version_number VARCHAR(50) NOT NULL, -- 版本号，例如 v1, v2
+        description TEXT, -- 提交描述
+        created_by INT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+      );
+    `);
+
+    await connection.query(`
+      -- 版本文件表，存储每个版本的文件快照
+      CREATE TABLE IF NOT EXISTS version_files (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        version_id INT NOT NULL,
+        file_id INT NOT NULL, -- 关联到 files 表的 ID
+        name VARCHAR(255) NOT NULL,
+        type ENUM('file', 'folder') NOT NULL,
+        parent_id INT DEFAULT NULL, -- 版本中的父文件 ID
+        content TEXT, -- 文件内容（快照）
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (version_id) REFERENCES versions(id) ON DELETE CASCADE,
+        FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES version_files(id) ON DELETE SET NULL
+      );
     `);
 
     console.log("所有表已成功创建或已存在");

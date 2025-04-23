@@ -110,7 +110,8 @@ if (document.getElementById("registerForm")) {
       });
       const result = await response.json();
       alert(result.message);
-      if (result.success) window.location.href = "index.html";
+      if (result.success)
+        window.location.href = `index.html?id=${result.userId}`;
     } catch (err) {
       console.error("注册错误:", err);
       alert("网络错误，请稍后重试");

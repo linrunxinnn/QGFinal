@@ -1,5 +1,7 @@
+// initPullRequests();
 let currentBranchId = null;
-
+const urlParams = new URLSearchParams(window.location.search);
+const userId = urlParams.get("userId");
 // item.js
 document.addEventListener("DOMContentLoaded", () => {
   init(); // 初始加载项目页面
@@ -32,7 +34,15 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           if (id === "work") {
             box.style.display = "flex";
-            // initWorkSpace();
+            initWorkSpace(); // 手动调用工作区初始化
+          }
+          if (id === "report") {
+            box.style.display = "flex";
+            // initReport();
+          }
+          if (id === "set") {
+            box.style.display = "flex";
+            initProject();
           }
         }
       });
@@ -61,8 +71,8 @@ function buildFileTree(files) {
   return tree;
 }
 
-// 递归渲染文件树
-function renderFileTree(files, level = 0) {
+// 递归渲染文件树（为避免冲突，重命名为 renderMainFileTree）
+function renderMainFileTree(files, level = 0) {
   return files
     .map(
       (file) => `
@@ -81,7 +91,7 @@ function renderFileTree(files, level = 0) {
             }</div>
             ${
               file.children.length
-                ? `<div class="children" style="display: none;">${renderFileTree(
+                ? `<div class="children" style="display: none;">${renderMainFileTree(
                     file.children,
                     level + 1
                   )}</div>`
@@ -141,7 +151,11 @@ function renderBranchDetails(itemBox, project, branchId) {
           </div>
         </div>
         <div class="document-box">
-          ${fileTree.length ? renderFileTree(fileTree) : "<div>暂无文件</div>"}
+          ${
+            fileTree.length
+              ? renderMainFileTree(fileTree)
+              : "<div>暂无文件</div>"
+          }
         </div>
       `;
 
@@ -359,18 +373,24 @@ function init() {
     });
 }
 
-// 启动初始化
-init();
+// 手动初始化工作区
+function initWorkSpace() {
+  if (typeof initFileWorkspace === "function") {
+    initFileWorkspace(currentBranchId); // 传递当前分支 ID
+  } else {
+    console.error("initFileWorkspace 未定义，请确保 file.js 已加载");
+  }
+}
 
-// --------------------------------------------------------------
-let pullRequests = []; // 存储拉取请求数据
-let branches = []; // 存储分支数据
-let users = []; // 存储用户信息
-let selectedTags = new Set(); // 存储已选标签
-let selectedManagers = new Set(); // 存储已选负责人
+// 以下是原有的 pull request 相关代码（保持不变）...
+let pullRequests = [];
+let branches = [];
+let users = [];
+let selectedTags = new Set();
+let selectedManagers = new Set();
 
 // 初始化拉取请求页面
-let isNewPullRequestInitialized = false; // 防止重复初始化
+let isNewPullRequestInitialized = false;
 
 function initPullRequests() {
   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
@@ -382,7 +402,6 @@ function initPullRequests() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
 
-  // 获取拉取请求数据
   fetch(`http://localhost:3000/project/pulls/${projectId}`, {
     method: "GET",
     headers: {
@@ -411,7 +430,6 @@ function initPullRequests() {
       `;
     });
 
-  // 获取分支数据和成员数据，使用 Promise.all 确保只调用一次 initNewPullRequest
   Promise.all([
     fetch(`http://localhost:3000/project/branches/${projectId}`, {
       method: "GET",
@@ -467,7 +485,36 @@ function initPullRequests() {
     });
 }
 
-// 渲染拉取请求列表
+async function fetchBranches(projectId) {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/branches/${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`获取分支失败: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("获取分支数据失败");
+    }
+
+    return data.branches || [];
+  } catch (error) {
+    console.error("获取分支错误:", error);
+    return [];
+  }
+}
+
+// 其他 pull request 相关函数保持不变...
 function renderPullRequests(requests) {
   const listBox = document.querySelector('[data-box="pull"] .pull-list .list');
   if (!listBox) {
@@ -477,7 +524,6 @@ function renderPullRequests(requests) {
   listBox.innerHTML = requests.length
     ? requests
         .map((request) => {
-          // 处理 tags，确保是字符串数组
           const tags = Array.isArray(request.tags)
             ? request.tags.map((tag) =>
                 typeof tag === "string" ? tag : tag.name
@@ -524,7 +570,6 @@ function renderPullRequests(requests) {
     : "<div>暂无拉取请求</div>";
 }
 
-// 初始化筛选下拉框并实时过滤
 function initFilterOptions(requests) {
   const authorSelect = document.querySelector("#author");
   const statusSelect = document.querySelector("#status");
@@ -536,12 +581,10 @@ function initFilterOptions(requests) {
     return;
   }
 
-  // 初始化选项
   const authors = [
     ...new Set(requests.map((r) => r.author_name || r.creator_name)),
   ].sort();
   const statuses = [...new Set(requests.map((r) => r.status))].sort();
-  // 处理 tags，确保是字符串数组
   const tags = [
     ...new Set(
       [].concat(
@@ -580,7 +623,6 @@ function initFilterOptions(requests) {
     `<option value="">分支</option>` +
     branches.map((b) => `<option value="${b}">${b}</option>`).join("");
 
-  // 实时筛选
   function filterRequests() {
     const filters = {
       author: authorSelect.value,
@@ -589,7 +631,6 @@ function initFilterOptions(requests) {
       branch: branchSelect.value,
     };
     const filteredRequests = requests.filter((request) => {
-      // 处理 tags，确保是字符串数组
       const requestTags = Array.isArray(request.tags)
         ? request.tags.map((tag) => (typeof tag === "string" ? tag : tag.name))
         : [];
@@ -611,392 +652,421 @@ function initFilterOptions(requests) {
   });
 }
 
-// 初始化新的拉取请求
-function initNewPullRequest() {
-  const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
-  const pullSection = pullBox.querySelector(".pull-box");
-  const newPullSection = pullBox.querySelector(".new-pull");
-  const newPullBtn = pullSection.querySelector(".head .icon");
-  const backBtn = newPullSection.querySelector(".head .icon");
+// function initNewPullRequest() {
+//   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
+//   const pullSection = pullBox.querySelector(".pull-box");
+//   const newPullSection = pullBox.querySelector(".new-pull");
+//   const newPullBtn = pullSection.querySelector(".head .icon");
+//   const backBtn = newPullSection.querySelector(".head .icon");
 
-  if (!pullBox || !pullSection || !newPullSection || !newPullBtn || !backBtn) {
-    console.error("拉取请求相关元素未找到");
-    return;
-  }
+//   if (!pullBox || !pullSection || !newPullSection || !newPullBtn || !backBtn) {
+//     console.error("拉取请求相关元素未找到");
+//     return;
+//   }
 
-  // 显示/隐藏新拉取请求页面
-  newPullBtn.addEventListener("click", () => {
-    pullSection.style.display = "none";
-    newPullSection.style.display = "flex";
-  });
-  backBtn.addEventListener("click", () => {
-    pullSection.style.display = "flex";
-    newPullSection.style.display = "none";
-  });
+//   newPullBtn.addEventListener("click", () => {
+//     pullSection.style.display = "none";
+//     newPullSection.style.display = "flex";
+//   });
+//   backBtn.addEventListener("click", () => {
+//     pullSection.style.display = "flex";
+//     newPullSection.style.display = "none";
+//   });
 
-  // 切换拉取/合并模式
-  const actionSelect = newPullSection.querySelector(
-    ".new-pull-box > .head #action"
-  );
-  const pullBoxSection = newPullSection.querySelector(
-    ".new-pull-box > .head .pull-box"
-  );
-  const mergeBoxSection = newPullSection.querySelector(
-    ".new-pull-box > .head .merge-box"
-  );
+//   const actionSelect = newPullSection.querySelector(
+//     ".new-pull-box > .head #action"
+//   );
+//   const pullBoxSection = newPullSection.querySelector(
+//     ".new-pull-box > .head .pull-box"
+//   );
+//   const mergeBoxSection = newPullSection.querySelector(
+//     ".new-pull-box > .head .merge-box"
+//   );
 
-  if (!actionSelect || !pullBoxSection || !mergeBoxSection) {
-    console.error("拉取/合并模式元素未找到");
-    return;
-  }
+//   if (!actionSelect || !pullBoxSection || !mergeBoxSection) {
+//     console.error("拉取/合并模式元素未找到");
+//     return;
+//   }
 
-  // 设置初始状态
-  pullBoxSection.style.display =
-    actionSelect.value === "pull-box" ? "flex" : "none";
-  mergeBoxSection.style.display =
-    actionSelect.value === "merge-box" ? "flex" : "none";
+//   pullBoxSection.style.display =
+//     actionSelect.value === "pull-box" ? "flex" : "none";
+//   mergeBoxSection.style.display =
+//     actionSelect.value === "merge-box" ? "flex" : "none";
 
-  actionSelect.addEventListener("change", () => {
-    const action = actionSelect.value;
-    pullBoxSection.style.display = action === "pull-box" ? "flex" : "none";
-    mergeBoxSection.style.display = action === "merge-box" ? "flex" : "none";
-  });
+//   actionSelect.addEventListener("change", () => {
+//     const action = actionSelect.value;
+//     pullBoxSection.style.display = action === "pull-box" ? "flex" : "none";
+//     mergeBoxSection.style.display = action === "merge-box" ? "flex" : "none";
+//   });
 
-  // 初始化 pull-box 分支下拉菜单（仅 from 部分）
-  const fromDropdown = pullBoxSection.querySelector(".from .drop-down");
-  const fromIcon = pullBoxSection.querySelector(".from .icon");
-  const fromSpan = pullBoxSection.querySelector(".from .icon .select-from");
+//   const fromDropdown = pullBoxSection.querySelector(".from .drop-down");
+//   const fromIcon = pullBoxSection.querySelector(".from .icon");
+//   const fromSpan = pullBoxSection.querySelector(".from .icon .select-from");
 
-  if (!fromDropdown || !fromIcon || !fromSpan) {
-    console.error("pull-box 分支下拉菜单元素未找到");
-    return;
-  }
+//   if (!fromDropdown || !fromIcon || !fromSpan) {
+//     console.error("pull-box 分支下拉菜单元素未找到");
+//     return;
+//   }
 
-  // 填充“根据（从哪里拉取）”下拉菜单
-  // console.log("branches:", branches);
-  fromDropdown.innerHTML = branches
-    .map(
-      (branch) => `
-        <div class="branch-item" data-branch-id="${
-          branch.id
-        }" data-branch-name="${branch.name}">
-          ${branch.name}${branch.is_main ? " (主分支)" : ""}
-        </div>
-      `
-    )
-    .join("");
+//   fromDropdown.innerHTML = branches
+//     .map(
+//       (branch) => `
+//         <div class="branch-item" data-branch-id="${
+//           branch.id
+//         }" data-branch-name="${branch.name}">
+//           ${branch.name}${branch.is_main ? " (主分支)" : ""}
+//         </div>
+//       `
+//     )
+//     .join("");
 
-  // 设置默认值：从当前分支拉取（currentBranchId）
-  const defaultFromBranch =
-    branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
-  if (defaultFromBranch) {
-    fromSpan.textContent = defaultFromBranch.name;
-    fromSpan.dataset.branchId = defaultFromBranch.id;
-  } else {
-    fromSpan.textContent = "无分支";
-    fromSpan.dataset.branchId = "";
-  }
+//   const defaultFromBranch =
+//     branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
+//   if (defaultFromBranch) {
+//     fromSpan.textContent = defaultFromBranch.name;
+//     fromSpan.dataset.branchId = defaultFromBranch.id;
+//   } else {
+//     fromSpan.textContent = "无分支";
+//     fromSpan.dataset.branchId = "";
+//   }
 
-  fromIcon.addEventListener("click", (e) => {
-    e.stopPropagation();
-    fromDropdown.style.display = "flex";
-  });
+//   fromIcon.addEventListener("click", (e) => {
+//     e.stopPropagation();
+//     fromDropdown.style.display = "flex";
+//   });
 
-  fromDropdown.querySelectorAll(".branch-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      fromSpan.textContent = item.getAttribute("data-branch-name");
-      fromSpan.dataset.branchId = item.getAttribute("data-branch-id");
-      fromDropdown.style.display = "none";
-    });
-  });
+//   fromDropdown.querySelectorAll(".branch-item").forEach((item) => {
+//     item.addEventListener("click", () => {
+//       fromSpan.textContent = item.getAttribute("data-branch-name");
+//       fromSpan.dataset.branchId = item.getAttribute("data-branch-id");
+//       fromDropdown.style.display = "none";
+//     });
+//   });
 
-  document.addEventListener("click", () => {
-    fromDropdown.style.display = "none";
-  });
+//   document.addEventListener("click", () => {
+//     fromDropdown.style.display = "none";
+//   });
 
-  // 初始化 merge-box 的分支下拉菜单（包含 from 和 to）
-  const mergeFromDropdown = mergeBoxSection.querySelector(".from .drop-down");
-  const mergeToDropdown = mergeBoxSection.querySelector(".to .drop-down");
-  const mergeFromIcon = mergeBoxSection.querySelector(".from .icon");
-  const mergeToIcon = mergeBoxSection.querySelector(".to .icon");
-  const mergeFromSpan = mergeBoxSection.querySelector(".from .select-from");
-  const mergeToSpan = mergeBoxSection.querySelector(".to .select-to");
+//   const mergeFromDropdown = mergeBoxSection.querySelector(".from .drop-down");
+//   const mergeToDropdown = mergeBoxSection.querySelector(".to .drop-down");
+//   const mergeFromIcon = mergeBoxSection.querySelector(".from .icon");
+//   const mergeToIcon = mergeBoxSection.querySelector(".to .icon");
+//   const mergeFromSpan = mergeBoxSection.querySelector(".from .select-from");
+//   const mergeToSpan = mergeBoxSection.querySelector(".to .select-to");
 
-  if (
-    mergeFromDropdown &&
-    mergeToDropdown &&
-    mergeFromIcon &&
-    mergeToIcon &&
-    mergeFromSpan &&
-    mergeToSpan
-  ) {
-    mergeFromDropdown.innerHTML = branches
-      .map(
-        (branch) => `
-          <div class="branch-item" data-branch-id="${
-            branch.id
-          }" data-branch-name="${branch.name}">
-            ${branch.name}${branch.is_main ? " (主分支)" : ""}
-          </div>
-        `
-      )
-      .join("");
-    mergeToDropdown.innerHTML = branches
-      .map(
-        (branch) => `
-          <div class="branch-item" data-branch-id="${
-            branch.id
-          }" data-branch-name="${branch.name}">
-            ${branch.name}${branch.is_main ? " (主分支)" : ""}
-          </div>
-        `
-      )
-      .join("");
+//   if (
+//     mergeFromDropdown &&
+//     mergeToDropdown &&
+//     mergeFromIcon &&
+//     mergeToIcon &&
+//     mergeFromSpan &&
+//     mergeToSpan
+//   ) {
+//     mergeFromDropdown.innerHTML = branches
+//       .map(
+//         (branch) => `
+//           <div class="branch-item" data-branch-id="${
+//             branch.id
+//           }" data-branch-name="${branch.name}">
+//             ${branch.name}${branch.is_main ? " (主分支)" : ""}
+//           </div>
+//         `
+//       )
+//       .join("");
+//     mergeToDropdown.innerHTML = branches
+//       .map(
+//         (branch) => `
+//           <div class="branch-item" data-branch-id="${
+//             branch.id
+//           }" data-branch-name="${branch.name}">
+//             ${branch.name}${branch.is_main ? " (主分支)" : ""}
+//           </div>
+//         `
+//       )
+//       .join("");
 
-    // merge-box 的默认值
-    const defaultMergeFromBranch =
-      branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
-    const defaultMergeToBranch = branches.find((b) => b.is_main) || branches[0];
-    if (defaultMergeFromBranch) {
-      mergeFromSpan.textContent = defaultMergeFromBranch.name;
-      mergeFromSpan.dataset.branchId = defaultMergeFromBranch.id;
-    }
-    if (defaultMergeToBranch) {
-      mergeToSpan.textContent = defaultMergeToBranch.name;
-      mergeToSpan.dataset.branchId = defaultMergeToBranch.id;
-    }
+//     const defaultMergeFromBranch =
+//       branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
+//     const defaultMergeToBranch = branches.find((b) => b.is_main) || branches[0];
+//     if (defaultMergeFromBranch) {
+//       mergeFromSpan.textContent = defaultMergeFromBranch.name;
+//       mergeFromSpan.dataset.branchId = defaultMergeFromBranch.id;
+//     }
+//     if (defaultMergeToBranch) {
+//       mergeToSpan.textContent = defaultMergeToBranch.name;
+//       mergeToSpan.dataset.branchId = defaultMergeToBranch.id;
+//     }
 
-    mergeFromIcon.addEventListener("click", (e) => {
-      e.stopPropagation();
-      mergeFromDropdown.style.display = "flex";
-    });
-    mergeToIcon.addEventListener("click", (e) => {
-      e.stopPropagation();
-      mergeToDropdown.style.display = "flex";
-    });
+//     mergeFromIcon.addEventListener("click", (e) => {
+//       e.stopPropagation();
+//       mergeFromDropdown.style.display = "flex";
+//     });
+//     mergeToIcon.addEventListener("click", (e) => {
+//       e.stopPropagation();
+//       mergeToDropdown.style.display = "flex";
+//     });
 
-    mergeFromDropdown.querySelectorAll(".branch-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        mergeFromSpan.textContent = item.getAttribute("data-branch-name");
-        mergeFromSpan.dataset.branchId = item.getAttribute("data-branch-id");
-        mergeFromDropdown.style.display = "none";
-      });
-    });
-    mergeToDropdown.querySelectorAll(".branch-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        mergeToSpan.textContent = item.getAttribute("data-branch-name");
-        mergeToSpan.dataset.branchId = item.getAttribute("data-branch-id");
-        mergeToDropdown.style.display = "none";
-      });
-    });
+//     mergeFromDropdown.querySelectorAll(".branch-item").forEach((item) => {
+//       item.addEventListener("click", () => {
+//         mergeFromSpan.textContent = item.getAttribute("data-branch-name");
+//         mergeFromSpan.dataset.branchId = item.getAttribute("data-branch-id");
+//         mergeFromDropdown.style.display = "none";
+//       });
+//     });
+//     mergeToDropdown.querySelectorAll(".branch-item").forEach((item) => {
+//       item.addEventListener("click", () => {
+//         mergeToSpan.textContent = item.getAttribute("data-branch-name");
+//         mergeToSpan.dataset.branchId = item.getAttribute("data-branch-id");
+//         mergeToDropdown.style.display = "none";
+//       });
+//     });
 
-    document.addEventListener("click", () => {
-      mergeFromDropdown.style.display = "none";
-      mergeToDropdown.style.display = "none";
-    });
-  }
+//     document.addEventListener("click", () => {
+//       mergeFromDropdown.style.display = "none";
+//       mergeToDropdown.style.display = "none";
+//     });
+//   }
 
-  // 标签选择：从数据库获取标签
-  const tagList = newPullSection.querySelector(".tag-box .tag-list");
-  const inputTag = newPullSection.querySelector(".tag-box .input-tag");
-  const availableTags = new Map();
+//   const tagList = newPullSection.querySelector(".tag-box .tag-list");
+//   const inputTag = newPullSection.querySelector(".tag-box .input-tag");
+//   const availableTags = new Map();
 
-  if (!tagList || !inputTag) {
-    console.error("标签选择元素未找到");
-    return;
-  }
+//   if (!tagList || !inputTag) {
+//     console.error("标签选择元素未找到");
+//     return;
+//   }
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const projectId = urlParams.get("id");
+//   const urlParams = new URLSearchParams(window.location.search);
+//   const projectId = urlParams.get("id");
 
-  fetch(`http://localhost:3000/project/tags/${projectId}`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-      "Content-Type": "application/json",
-    },
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`获取标签失败: ${response.statusText}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (!data.success) {
-        throw new Error("获取标签数据失败");
-      }
+//   fetch(`http://localhost:3000/project/tags/${projectId}`, {
+//     method: "GET",
+//     headers: {
+//       Authorization: `Bearer ${localStorage.getItem("token")}`,
+//       "Content-Type": "application/json",
+//     },
+//   })
+//     .then((response) => {
+//       if (!response.ok) {
+//         throw new Error(`获取标签失败: ${response.statusText}`);
+//       }
+//       return response.json();
+//     })
+//     .then((data) => {
+//       if (!data.success) {
+//         throw new Error("获取标签数据失败");
+//       }
 
-      const tags = data.tags || [];
-      tagList.innerHTML = "";
-      tags.forEach((tag) => {
-        const tagId = String(tag.id);
-        const tagElement = document.createElement("span");
-        tagElement.setAttribute("data-tag", tagId);
-        tagElement.textContent = tag.name;
-        tagElement.style.backgroundColor = tag.color || "#e67700";
-        tagElement.style.color = "#fff";
-        tagElement.style.padding = "5px 10px";
-        tagElement.style.borderRadius = "5px";
-        tagElement.style.margin = "2px";
-        tagList.appendChild(tagElement);
-        // 将标签信息存储到 availableTags 中
-        availableTags.set(tagId, {
-          name: tag.name,
-          color: tag.color || "#e67700",
-          element: tagElement.cloneNode(true),
-        });
+//       const tags = data.tags || [];
+//       tagList.innerHTML = "";
+//       tags.forEach((tag) => {
+//         const tagId = String(tag.id);
+//         const tagElement = document.createElement("span");
+//         tagElement.setAttribute("data-tag", tagId);
+//         tagElement.textContent = tag.name;
+//         tagElement.style.backgroundColor = tag.color || "#e67700";
+//         tagElement.style.color = "#fff";
+//         tagElement.style.padding = "5px 10px";
+//         tagElement.style.borderRadius = "5px";
+//         tagElement.style.margin = "2px";
+//         tagList.appendChild(tagElement);
+//         availableTags.set(tagId, {
+//           name: tag.name,
+//           color: tag.color || "#e67700",
+//           element: tagElement.cloneNode(true),
+//         });
 
-        tagElement.addEventListener("click", handleTagAdd);
-      });
-    })
-    .catch((error) => {
-      console.error("获取标签错误:", error);
-      tagList.innerHTML = `<div class="error">加载标签失败：${error.message}</div>`;
-    });
+//         tagElement.addEventListener("click", handleTagAdd);
+//       });
+//     })
+//     .catch((error) => {
+//       console.error("获取标签错误:", error);
+//       tagList.innerHTML = `<div class="error">加载标签失败：${error.message}</div>`;
+//     });
 
-  function handleTagAdd(e) {
-    const tag = e.target;
-    const tagId = String(tag.getAttribute("data-tag"));
-    const tagInfo = availableTags.get(tagId);
+//   function handleTagAdd(e) {
+//     const tag = e.target;
+//     const tagId = String(tag.getAttribute("data-tag"));
+//     const tagInfo = availableTags.get(tagId);
 
-    if (!tagInfo) {
-      console.error(`未找到标签信息，tagId: ${tagId}`);
-      return;
-    }
+//     if (!tagInfo) {
+//       console.error(`未找到标签信息，tagId: ${tagId}`);
+//       return;
+//     }
 
-    const newTag = document.createElement("span");
-    newTag.setAttribute("data-tag", tagId);
-    newTag.className = "tag-item";
-    newTag.textContent = tagInfo.name;
-    newTag.style.backgroundColor = tagInfo.color;
-    newTag.style.borderRadius = "5px";
-    newTag.style.padding = "5px 10px";
-    newTag.style.color = "#fff";
-    newTag.style.margin = "2px";
-    inputTag.appendChild(newTag);
-    selectedTags.add(tagId);
+//     const newTag = document.createElement("span");
+//     newTag.setAttribute("data-tag", tagId);
+//     newTag.className = "tag-item";
+//     newTag.textContent = tagInfo.name;
+//     newTag.style.backgroundColor = tagInfo.color;
+//     newTag.style.borderRadius = "5px";
+//     newTag.style.padding = "5px 10px";
+//     newTag.style.color = "#fff";
+//     newTag.style.margin = "2px";
+//     inputTag.appendChild(newTag);
+//     selectedTags.add(tagId);
 
-    tag.remove();
-  }
+//     tag.remove();
+//   }
 
-  inputTag.addEventListener("click", (e) => {
-    if (e.target.classList.contains("tag-item")) {
-      const tagId = String(e.target.getAttribute("data-tag"));
-      const tagInfo = availableTags.get(tagId);
+//   inputTag.addEventListener("click", (e) => {
+//     if (e.target.classList.contains("tag-item")) {
+//       const tagId = String(e.target.getAttribute("data-tag"));
+//       const tagInfo = availableTags.get(tagId);
 
-      if (!tagInfo) {
-        console.error(`未找到标签信息，tagId: ${tagId}`);
-        return;
-      }
+//       if (!tagInfo) {
+//         console.error(`未找到标签信息，tagId: ${tagId}`);
+//         return;
+//       }
 
-      const existingTag = tagList.querySelector(`[data-tag="${tagId}"]`);
-      if (!existingTag) {
-        // 如果不存在，则添加
-        const newTag = tagInfo.element.cloneNode(true);
-        newTag.addEventListener("click", handleTagAdd);
-        tagList.appendChild(newTag);
-      } else {
-        console.log(`标签 ${tagId} 已存在于 .tag-list 中，不重复添加`);
-      }
+//       const existingTag = tagList.querySelector(`[data-tag="${tagId}"]`);
+//       if (!existingTag) {
+//         const newTag = tagInfo.element.cloneNode(true);
+//         newTag.addEventListener("click", handleTagAdd);
+//         tagList.appendChild(newTag);
+//       } else {
+//         console.log(`标签 ${tagId} 已存在于 .tag-list 中，不重复添加`);
+//       }
 
-      e.target.remove();
-      selectedTags.delete(tagId);
-    }
-  });
+//       e.target.remove();
+//       selectedTags.delete(tagId);
+//     }
+//   });
 
-  // 提交申请
-  const submitBtn = newPullSection.querySelector(".submit");
-  if (submitBtn) {
-    submitBtn.addEventListener("click", () => {
-      const action = actionSelect.value;
-      const section = action === "pull-box" ? pullBoxSection : mergeBoxSection;
-      const fromSpan = section.querySelector(".from .select-from");
-      const toSpan = section.querySelector(".to .select-to"); // 仅在 merge-box 中使用
-      const titleInput = newPullSection.querySelector(".title-input");
-      const messageInput = newPullSection.querySelector("#message");
-      const deadlineInput = newPullSection.querySelector(".deadline .date");
+//   const submitBtn = newPullSection.querySelector(".submit");
+//   if (submitBtn) {
+//     submitBtn.addEventListener("click", () => {
+//       const action = actionSelect.value;
+//       const section = action === "pull-box" ? pullBoxSection : mergeBoxSection;
+//       const fromSpan = section.querySelector(".from .select-from");
+//       const toSpan = section.querySelector(".to .select-to");
+//       const titleInput = newPullSection.querySelector(".title-input");
+//       const messageInput = newPullSection.querySelector("#message");
+//       const deadlineInput = newPullSection.querySelector(".deadline .date");
 
-      const fromBranchId = fromSpan.dataset.branchId;
-      const toBranchId = toSpan ? toSpan.dataset.branchId : null; // pull-box 不需要 toBranchId
-      const title = titleInput ? titleInput.value : "";
-      const message = messageInput ? messageInput.value : "";
-      const tags = Array.from(selectedTags);
-      const managers = Array.from(selectedManagers);
-      const deadline = deadlineInput ? deadlineInput.value : "";
+//       const fromBranchId = fromSpan.dataset.branchId;
+//       const toBranchId = toSpan ? toSpan.dataset.branchId : null;
+//       const title = titleInput ? titleInput.value : "";
+//       const message = messageInput ? messageInput.value : "";
+//       const tags = Array.from(selectedTags);
+//       const managers = Array.from(selectedManagers);
+//       const deadline = deadlineInput ? deadlineInput.value : "";
 
-      if (!title || !message || !fromBranchId) {
-        alert("请填写所有必填字段！");
-        return;
-      }
+//       if (!title || !message || !fromBranchId) {
+//         alert("请填写所有必填字段！");
+//         return;
+//       }
 
-      // 提交数据
-      const requestBody = {
-        projectId,
-        title,
-        description: message,
-        sourceBranchId: fromBranchId,
-        status: "wait",
-        deadline,
-        tags,
-        members: managers,
-      };
+//       const requestBody = {
+//         projectId,
+//         title,
+//         description: message,
+//         sourceBranchId: fromBranchId,
+//         status: "wait",
+//         deadline,
+//         tags,
+//         members: managers,
+//       };
 
-      // 如果是 merge-box，则需要 targetBranchId
-      if (action === "merge-box" && toBranchId) {
-        requestBody.targetBranchId = toBranchId;
-      }
+//       if (action === "merge-box" && toBranchId) {
+//         requestBody.targetBranchId = toBranchId;
+//       }
 
-      fetch(`http://localhost:3000/project/pulls/create`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            return response.json().then((errorData) => {
-              throw new Error(
-                errorData.error || `HTTP错误: ${response.status}`
-              );
-            });
-          }
-          return response.json();
-        })
-        .then((data) => {
-          if (!data.success) {
-            throw new Error("创建拉取请求失败");
-          }
-          alert("拉取请求创建成功！");
-          // 清空表单并返回列表
-          if (titleInput) titleInput.value = "";
-          if (messageInput) messageInput.value = "";
-          selectedTags.clear();
-          inputTag.innerHTML = "";
-          tagList.innerHTML = "";
-          availableTags.forEach((tagInfo, tagId) => {
-            const newTag = tagInfo.element.cloneNode(true);
-            newTag.addEventListener("click", handleTagAdd);
-            tagList.appendChild(newTag);
-          });
-          selectedManagers.clear();
-          const managerList = newPullSection.querySelector(".manager-list");
-          if (managerList) managerList.innerHTML = "";
-          pullSection.style.display = "flex";
-          newPullSection.style.display = "none";
-          initPullRequests();
-        })
-        .catch((error) => {
-          console.error("创建拉取请求错误:", error);
-          alert("创建失败：" + error.message);
-        });
-    });
-  }
-}
+//       if (action === "pull-box") {
+//         fetch(`http://localhost:3000/project/pulls/create`, {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("token")}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify(requestBody),
+//         })
+//           .then((response) => {
+//             if (!response.ok) {
+//               return response.json().then((errorData) => {
+//                 throw new Error(
+//                   errorData.error || `HTTP错误: ${response.status}`
+//                 );
+//               });
+//             }
+//             return response.json();
+//           })
+//           .then((data) => {
+//             if (!data.success) {
+//               throw new Error("创建拉取请求失败");
+//             }
+//             alert("拉取请求创建成功！");
+//             if (titleInput) titleInput.value = "";
+//             if (messageInput) messageInput.value = "";
+//             selectedTags.clear();
+//             inputTag.innerHTML = "";
+//             tagList.innerHTML = "";
+//             availableTags.forEach((tagInfo, tagId) => {
+//               const newTag = tagInfo.element.cloneNode(true);
+//               newTag.addEventListener("click", handleTagAdd);
+//               tagList.appendChild(newTag);
+//             });
+//             selectedManagers.clear();
+//             const managerList = newPullSection.querySelector(".manager-list");
+//             if (managerList) managerList.innerHTML = "";
+//             pullSection.style.display = "flex";
+//             newPullSection.style.display = "none";
+//             initPullRequests();
+//           })
+//           .catch((error) => {
+//             console.error("创建拉取请求错误:", error);
+//             alert("创建失败：" + error.message);
+//           });
+//       } else {
+//         fetch(`http://localhost:3000/project/merge/create`, {
+//           method: "POST",
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("token")}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify(requestBody),
+//         })
+//           .then((response) => {
+//             if (!response.ok) {
+//               return response.json().then((errorData) => {
+//                 throw new Error(
+//                   errorData.error || `HTTP错误: ${response.status}`
+//                 );
+//               });
+//             }
+//             return response.json();
+//           })
+//           .then((data) => {
+//             if (!data.success) {
+//               throw new Error("创建合并请求失败");
+//             }
+//             alert("合并请求创建成功！");
+//             if (titleInput) titleInput.value = "";
+//             if (messageInput) messageInput.value = "";
+//             selectedTags.clear();
+//             inputTag.innerHTML = "";
+//             tagList.innerHTML = "";
+//             availableTags.forEach((tagInfo, tagId) => {
+//               const newTag = tagInfo.element.cloneNode(true);
+//               newTag.addEventListener("click", handleTagAdd);
+//               tagList.appendChild(newTag);
+//             });
+//             selectedManagers.clear();
+//             const managerList = newPullSection.querySelector(".manager-list");
+//             if (managerList) managerList.innerHTML = "";
+//             pullSection.style.display = "flex";
+//             newPullSection.style.display = "none";
+//             initPullRequests();
+//           })
+//           .catch((error) => {
+//             console.error("创建合并请求错误:", error);
+//             alert("创建失败：" + error.message);
+//           });
+//       }
+//     });
+//   }
+// }
 
-// 初始化负责人选择
 function initResponsibility() {
   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
   if (!pullBox) {
@@ -1079,4 +1149,877 @@ function initResponsibility() {
   });
 }
 
+// 初始化界面切换
+function initSectionToggle(pullBox) {
+  const pullSection = pullBox.querySelector(".pull-box");
+  const newPullSection = pullBox.querySelector(".new-pull");
+  const newPullBtn = pullSection.querySelector(".head .icon");
+  const backBtn = newPullSection.querySelector(".head .icon");
+
+  if (!pullSection || !newPullSection || !newPullBtn || !backBtn) {
+    console.error("拉取请求相关元素未找到");
+    return;
+  }
+
+  newPullBtn.addEventListener("click", () => {
+    pullSection.style.display = "none";
+    newPullSection.style.display = "flex";
+  });
+  backBtn.addEventListener("click", () => {
+    pullSection.style.display = "flex";
+    newPullSection.style.display = "none";
+  });
+
+  return { pullSection, newPullSection };
+}
+
+// 初始化分支选择
+function initBranchSelection(
+  section,
+  type,
+  branches,
+  defaultBranchId,
+  mainBranchId
+) {
+  const dropdown = section.querySelector(`.${type} .drop-down`);
+  const icon = section.querySelector(`.${type} .icon`);
+  const span = section.querySelector(`.${type} .select-${type}`);
+
+  if (!dropdown || !icon || !span) {
+    console.error(`${type} 分支下拉菜单元素未找到`);
+    return;
+  }
+
+  // 填充下拉菜单
+  dropdown.innerHTML = branches
+    .map(
+      (branch) => `
+      <div class="branch-item" data-branch-id="${
+        branch.id
+      }" data-branch-name="${branch.name}">
+        ${branch.name}${branch.is_main ? " (主分支)" : ""}
+      </div>
+    `
+    )
+    .join("");
+
+  // 设置默认值
+  // 源分支（from）：默认选择第一个分支
+  // 目标分支（to）：默认选择主分支（如果存在），否则选择第一个分支
+  const defaultBranch =
+    type === "from"
+      ? branches[0] // 源分支默认选择第一个分支
+      : branches.find((b) => b.is_main) || branches[0]; // 目标分支默认选择主分支
+
+  if (defaultBranch) {
+    span.textContent = defaultBranch.name;
+    span.dataset.branchId = defaultBranch.id;
+  } else {
+    span.textContent = "无分支";
+    span.dataset.branchId = "";
+  }
+
+  // 点击图标显示下拉菜单
+  icon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    dropdown.style.display = "flex";
+  });
+
+  // 选择分支
+  dropdown.querySelectorAll(".branch-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      span.textContent = item.getAttribute("data-branch-name");
+      span.dataset.branchId = item.getAttribute("data-branch-id");
+      dropdown.style.display = "none";
+    });
+  });
+
+  // 点击页面其他地方关闭下拉菜单
+  document.addEventListener("click", () => {
+    dropdown.style.display = "none";
+  });
+
+  return span;
+}
+
+// 初始化标签选择
+async function initTagSelection(newPullSection, projectId, selectedTags) {
+  const tagList = newPullSection.querySelector(".tag-box .tag-list");
+  const inputTag = newPullSection.querySelector(".tag-box .input-tag");
+  const availableTags = new Map();
+
+  if (!tagList || !inputTag) {
+    console.error("标签选择元素未找到");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/tags/${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`获取标签失败: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("获取标签数据失败");
+    }
+
+    const tags = data.tags || [];
+    tagList.innerHTML = "";
+    tags.forEach((tag) => {
+      const tagId = String(tag.id);
+      const tagElement = document.createElement("span");
+      tagElement.setAttribute("data-tag", tagId);
+      tagElement.textContent = tag.name;
+      tagElement.style.backgroundColor = tag.color || "#e67700";
+      tagElement.style.color = "#fff";
+      tagElement.style.padding = "5px 10px";
+      tagElement.style.borderRadius = "5px";
+      tagElement.style.margin = "2px";
+      tagList.appendChild(tagElement);
+      availableTags.set(tagId, {
+        name: tag.name,
+        color: tag.color || "#e67700",
+        element: tagElement.cloneNode(true),
+      });
+
+      tagElement.addEventListener("click", handleTagAdd);
+    });
+
+    function handleTagAdd(e) {
+      const tag = e.target;
+      const tagId = String(tag.getAttribute("data-tag"));
+      const tagInfo = availableTags.get(tagId);
+
+      if (!tagInfo) {
+        console.error(`未找到标签信息，tagId: ${tagId}`);
+        return;
+      }
+
+      const newTag = document.createElement("span");
+      newTag.setAttribute("data-tag", tagId);
+      newTag.className = "tag-item";
+      newTag.textContent = tagInfo.name;
+      newTag.style.backgroundColor = tagInfo.color;
+      newTag.style.borderRadius = "5px";
+      newTag.style.padding = "5px 10px";
+      newTag.style.color = "#fff";
+      newTag.style.margin = "2px";
+      inputTag.appendChild(newTag);
+      selectedTags.add(tagId);
+
+      tag.remove();
+    }
+
+    inputTag.addEventListener("click", (e) => {
+      if (e.target.classList.contains("tag-item")) {
+        const tagId = String(e.target.getAttribute("data-tag"));
+        const tagInfo = availableTags.get(tagId);
+
+        if (!tagInfo) {
+          console.error(`未找到标签信息，tagId: ${tagId}`);
+          return;
+        }
+
+        const existingTag = tagList.querySelector(`[data-tag="${tagId}"]`);
+        if (!existingTag) {
+          const newTag = tagInfo.element.cloneNode(true);
+          newTag.addEventListener("click", handleTagAdd);
+          tagList.appendChild(newTag);
+        }
+        e.target.remove();
+        selectedTags.delete(tagId);
+      }
+    });
+
+    return availableTags;
+  } catch (error) {
+    console.error("获取标签错误:", error);
+    tagList.innerHTML = `<div class="error">加载标签失败：${error.message}</div>`;
+  }
+}
+
+// 提交拉取请求
+async function submitPullRequest(
+  newPullSection,
+  pullSection,
+  projectId,
+  selectedTags,
+  selectedManagers,
+  availableTags
+) {
+  const section = newPullSection.querySelector(
+    ".new-pull-box > .head .merge-box"
+  ); // 直接使用 merge-box 样式
+  const fromSpan = section.querySelector(".from .select-from");
+  const toSpan = section.querySelector(".to .select-to");
+  const titleInput = newPullSection.querySelector(".title-input");
+  const messageInput = newPullSection.querySelector("#message");
+  const deadlineInput = newPullSection.querySelector(".deadline .date");
+  const tagList = newPullSection.querySelector(".tag-box .tag-list");
+  const inputTag = newPullSection.querySelector(".tag-box .input-tag");
+
+  const sourceBranchId = fromSpan.dataset.branchId;
+  const targetBranchId = toSpan.dataset.branchId;
+  const title = titleInput ? titleInput.value.trim() : "";
+  const description = messageInput ? messageInput.value.trim() : "";
+  const tags = Array.from(selectedTags);
+  const members = Array.from(selectedManagers);
+  const deadline = deadlineInput ? deadlineInput.value : "";
+
+  // 验证必填字段
+  if (!title || !description || !sourceBranchId || !targetBranchId) {
+    alert("请填写所有必填字段，包括源分支和目标分支！");
+    return;
+  }
+
+  const requestBody = {
+    projectId,
+    title,
+    description,
+    sourceBranchId,
+    targetBranchId,
+    status: "wait",
+    deadline,
+    tags,
+    members,
+  };
+
+  try {
+    const response = await fetch(`http://localhost:3000/project/pulls/create`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("创建拉取请求失败");
+    }
+
+    alert("拉取请求创建成功！");
+    // 重置表单
+    if (titleInput) titleInput.value = "";
+    if (messageInput) messageInput.value = "";
+    selectedTags.clear();
+    inputTag.innerHTML = "";
+    tagList.innerHTML = "";
+    availableTags.forEach((tagInfo, tagId) => {
+      const newTag = tagInfo.element.cloneNode(true);
+      newTag.addEventListener("click", tagList.handleTagAdd);
+      tagList.appendChild(newTag);
+    });
+    selectedManagers.clear();
+    const managerList = newPullSection.querySelector(".manager-list");
+    if (managerList) managerList.innerHTML = "";
+    pullSection.style.display = "flex";
+    newPullSection.style.display = "none";
+    initPullRequests();
+  } catch (error) {
+    console.error("创建拉取请求错误:", error);
+    alert(`创建失败：${error.message}`);
+  }
+}
+
+// 主函数
+async function initNewPullRequest() {
+  const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
+  if (!pullBox) {
+    console.error("拉取请求容器未找到");
+    return;
+  }
+
+  // const { pullSection, newPullSection } = initSectionToggle(pullBox);
+  // const section = newPullSection.querySelector(
+  //   ".new-pull-box > .head .merge-box"
+  // );
+  // section.style.display = "flex"; // 始终显示
+
+  // const urlParams = new URLSearchParams(window.location.search);
+  // const projectId = urlParams.get("id");
+  // const currentBranchId = urlParams.get("branchId"); // 假设可以从 URL 获取
+  // const branches = await fetchBranches(projectId); // 假设有一个函数获取分支
+
+  // const fromSpan = initBranchSelection(
+  //   section,
+  //   "from",
+  //   branches,
+  //   currentBranchId
+  // );
+  // const toSpan = initBranchSelection(section, "to", branches, null, true);
+
+  // const selectedTags = new Set();
+  // const selectedManagers = new Set();
+  // const availableTags = await initTagSelection(
+  //   newPullSection,
+  //   projectId,
+  //   selectedTags
+  // );
+
+  // const submitBtn = newPullSection.querySelector(".submit");
+  // if (submitBtn) {
+  //   submitBtn.addEventListener("click", () => {
+  //     submitPullRequest(
+  //       newPullSection,
+  //       pullSection,
+  //       projectId,
+  //       selectedTags,
+  //       selectedManagers,
+  //       availableTags
+  //     );
+  //   });
+  // }
+  const { pullSection, newPullSection } = initSectionToggle(pullBox);
+  const section = newPullSection.querySelector(
+    ".new-pull-box > .head .merge-box"
+  );
+  section.style.display = "flex"; // 始终显示
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectId = urlParams.get("id");
+  const branches = await fetchBranches(projectId); // 假设 fetchBranches 已定义
+
+  // 移除对 currentBranchId 的依赖，直接通过下拉菜单选择
+  const fromSpan = initBranchSelection(section, "from", branches);
+  const toSpan = initBranchSelection(section, "to", branches);
+
+  const selectedTags = new Set();
+  const selectedManagers = new Set();
+  const availableTags = await initTagSelection(
+    newPullSection,
+    projectId,
+    selectedTags
+  );
+
+  const submitBtn = newPullSection.querySelector(".submit");
+  if (submitBtn) {
+    submitBtn.addEventListener("click", () => {
+      submitPullRequest(
+        newPullSection,
+        pullSection,
+        projectId,
+        selectedTags,
+        selectedManagers,
+        availableTags
+      );
+    });
+  }
+}
+
 initPullRequests();
+
+//修改项目内容
+const projectId = new URLSearchParams(window.location.search).get("id");
+selectedTags = [];
+let admins = [];
+let members = [];
+let allUsers = []; // 存储所有用户，用于下拉选择
+
+// 初始化项目信息
+async function initProject() {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/init/${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            localStorage.getItem("token") || "your-token"
+          }`, // 确保 token 正确
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`获取项目详情失败，状态码: ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      const project = result.project;
+
+      // 填充标题和简介
+      document.querySelector(
+        ".main .main-contain [data-box='set'] > .message-box .input-title input"
+      ).value = project.name || "";
+      document.querySelector(
+        ".main .main-contain [data-box='set'] > .message-box .input-message textarea"
+      ).value = project.description || "";
+
+      // 填充标签
+      selectedTags = project.tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        color: tag.color,
+      }));
+      updateTags();
+
+      // 获取项目成员
+      admins = project.members.admins.map((member) => ({
+        id: member.id,
+        name: member.name,
+        avatar_url: member.avatar_url,
+      }));
+      members = project.members.regular.map((member) => ({
+        id: member.id,
+        name: member.name,
+        avatar_url: member.avatar_url,
+      }));
+
+      // 获取当前用户的所有朋友和项目成员
+      await fetchUsersAndMembers();
+      renderUsers();
+    } else {
+      alert("获取项目详情失败：" + result.error);
+    }
+  } catch (error) {
+    console.error("初始化项目失败:", error);
+    alert("初始化项目失败：" + error.message);
+  }
+}
+
+// 获取当前用户的所有朋友和项目成员
+async function fetchUsersAndMembers() {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/users-and-members/${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            localStorage.getItem("token") || "your-token"
+          }`, // 确保 token 正确
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`获取用户列表失败，状态码: ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (result.success) {
+      allUsers = result.users;
+    } else {
+      throw new Error("获取用户列表失败：" + result.error);
+    }
+  } catch (error) {
+    console.error("获取用户失败:", error);
+    allUsers = [];
+  }
+}
+
+// 渲染用户列表
+function renderUsers() {
+  const managerList = document.querySelector(
+    ".main .main-contain > [data-box='set'] > .message-box .responsibility .manager-list"
+  );
+  const groupList = document.querySelector(
+    ".main .main-contain > [data-box='set'] > .message-box .responsibility .group-list"
+  );
+
+  managerList.innerHTML = "";
+  groupList.innerHTML = "";
+
+  allUsers.forEach((user) => {
+    const isAdmin = admins.some((admin) => admin.id === user.id);
+    const isMember = members.some((member) => member.id === user.id);
+
+    // 管理员列表
+    const adminItem = document.createElement("div");
+    adminItem.classList.add("item");
+    adminItem.innerHTML = `
+      <div class="left">
+        <div class="img-box">
+          <img src="${user.avatar_url || "../img/头像.jpg"}" alt="${
+      user.name
+    }" />
+        </div>
+        <div class="name">${user.name}</div>
+      </div>
+      <input type="checkbox" data-id="${user.id}" data-type="admin" ${
+      isAdmin ? "checked" : ""
+    } />
+    `;
+    managerList.appendChild(adminItem);
+
+    // 普通成员列表
+    const memberItem = document.createElement("div");
+    memberItem.classList.add("item");
+    memberItem.innerHTML = `
+      <div class="left">
+        <div class="img-box">
+          <img src="${user.avatar_url || "../img/头像.jpg"}" alt="${
+      user.name
+    }" />
+        </div>
+        <div class="name">${user.name}</div>
+      </div>
+      <input type="checkbox" data-id="${user.id}" data-type="member" ${
+      isMember ? "checked" : ""
+    } />
+    `;
+    groupList.appendChild(memberItem);
+  });
+
+  // // 添加 checkbox 事件监听
+  // document
+  //   .querySelectorAll(
+  //     ".main .main-contain [data-box='set'] > .manager-list .manager-list input[type='checkbox']"
+  //   )
+  //   .forEach((checkbox) => {
+  //     checkbox.addEventListener("change", handleCheckboxChange);
+  //   });
+  // document
+  //   .querySelectorAll(
+  //     ".main .main-contain [data-box='set'] > .manager-list .group-list input[type='checkbox']"
+  //   )
+  //   .forEach((checkbox) => {
+  //     checkbox.addEventListener("change", handleCheckboxChange);
+  //   });
+  // 移除旧的事件监听器并绑定新的事件监听器
+  const adminCheckboxes = document.querySelectorAll(
+    ".main .main-contain [data-box='set'] .manager-list input[type='checkbox']"
+  );
+  const memberCheckboxes = document.querySelectorAll(
+    ".main .main-contain [data-box='set'] .group-list input[type='checkbox']"
+  );
+
+  adminCheckboxes.forEach((checkbox) => {
+    // 移除旧的事件监听器（通过克隆元素并替换）
+    const newCheckbox = checkbox.cloneNode(true);
+    checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+    newCheckbox.addEventListener("change", handleCheckboxChange);
+  });
+
+  memberCheckboxes.forEach((checkbox) => {
+    const newCheckbox = checkbox.cloneNode(true);
+    checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+    newCheckbox.addEventListener("change", handleCheckboxChange);
+  });
+}
+
+// 处理 checkbox 变化
+function handleCheckboxChange(e) {
+  const userId = parseInt(e.target.dataset.id, 10);
+  const type = e.target.dataset.type;
+  const isChecked = e.target.checked;
+
+  // console.log("Before update - admins:", admins, "members:", members);
+
+  if (type === "admin") {
+    if (isChecked) {
+      // 添加到管理员
+      const user = allUsers.find((u) => u.id === userId);
+      if (!admins.some((admin) => admin.id === userId)) {
+        admins.push({
+          id: userId,
+          name: user.name,
+          avatar_url: user.avatar_url,
+        });
+      }
+      // 从普通成员中移除
+      members = members.filter((member) => member.id !== userId);
+    } else {
+      // 从管理员中移除
+      admins = admins.filter((admin) => admin.id !== userId);
+    }
+  } else if (type === "member") {
+    if (isChecked) {
+      // 添加到普通成员
+      const user = allUsers.find((u) => u.id === userId);
+      if (!members.some((member) => member.id === userId)) {
+        members.push({
+          id: userId,
+          name: user.name,
+          avatar_url: user.avatar_url,
+        });
+      }
+      // 从管理员中移除
+      admins = admins.filter((admin) => admin.id !== userId);
+    } else {
+      // 从普通成员中移除
+      members = members.filter((member) => member.id !== userId);
+    }
+  }
+
+  // 同步更新 checkbox 状态
+  renderUsers();
+}
+
+// 更新标签显示
+function updateTags() {
+  const inputTag = document.querySelector(
+    ".main .main-contain [data-box='set'] > .message-box .tag-box .input-tag"
+  );
+  inputTag.innerHTML = "";
+  selectedTags.forEach((tag) => {
+    const tagElement = document.createElement("span");
+    tagElement.textContent = tag.name;
+    tagElement.style.backgroundColor = tag.color;
+    tagElement.style.color = "#fff";
+    tagElement.style.padding = "5px 10px";
+    tagElement.style.borderRadius = "5px";
+    tagElement.style.marginRight = "5px";
+    tagElement.dataset.id = tag.id;
+    tagElement.addEventListener("click", () => {
+      selectedTags = selectedTags.filter((t) => t.id !== tag.id);
+      updateTags();
+    });
+    inputTag.appendChild(tagElement);
+  });
+
+  // 确保至少有一个状态标签
+  const hasStatusTag = selectedTags.some((tag) =>
+    ["doing", "over", "wait"].includes(tag.name)
+  );
+  if (!hasStatusTag) {
+    alert("请至少选择一个状态标签（进行中、已完成、待办）");
+  }
+}
+
+// 更新管理员和成员列表
+function updateMembers() {
+  const managerList = document.querySelector(
+    ".main .main-contain [data-box='set'] > .message-box .responsibility .manager-list"
+  );
+  const groupList = document.querySelector(
+    ".main .main-contain [data-box='set'] > .message-box .responsibility .group-list"
+  );
+
+  managerList.innerHTML = "";
+  admins.forEach((admin) => {
+    const adminElement = document.createElement("span");
+    adminElement.textContent = admin.name;
+    adminElement.dataset.id = admin.id;
+    managerList.appendChild(adminElement);
+  });
+
+  groupList.innerHTML = "";
+  members.forEach((member) => {
+    const memberElement = document.createElement("span");
+    memberElement.textContent = member.name;
+    memberElement.dataset.id = member.id;
+    groupList.appendChild(memberElement);
+  });
+}
+
+// // 填充下拉菜单
+// function populateDropdowns() {
+//   const adminDropdown = document.querySelector(".admin-drop-down");
+//   const memberDropdown = document.querySelector(".member-drop-down");
+
+//   adminDropdown.innerHTML = "";
+//   memberDropdown.innerHTML = "";
+
+//   allUsers.forEach((user) => {
+//     // 管理员下拉
+//     const adminOption = document.createElement("div");
+//     adminOption.textContent = user.name;
+//     adminOption.dataset.id = user.id;
+//     adminOption.style.padding = "5px";
+//     adminOption.style.cursor = "pointer";
+//     adminOption.addEventListener("click", () => {
+//       if (!admins.some((admin) => admin.id === user.id)) {
+//         admins.push({ id: user.id, name: user.name });
+//         updateMembers();
+//       }
+//       adminDropdown.style.display = "none";
+//     });
+//     adminDropdown.appendChild(adminOption);
+
+//     // 成员下拉
+//     const memberOption = document.createElement("div");
+//     memberOption.textContent = user.name;
+//     memberOption.dataset.id = user.id;
+//     memberOption.style.padding = "5px";
+//     memberOption.style.cursor = "pointer";
+//     memberOption.addEventListener("click", () => {
+//       if (
+//         !members.some((member) => member.id === user.id) &&
+//         !admins.some((admin) => admin.id === user.id)
+//       ) {
+//         members.push({ id: user.id, name: user.name });
+//         updateMembers();
+//       }
+//       memberDropdown.style.display = "none";
+//     });
+//     memberDropdown.appendChild(memberOption);
+//   });
+// }
+
+// 标签选择
+document
+  .querySelector(
+    ".main .main-contain [data-box='set'] > .message-box .tag-box .tag-list"
+  )
+  .addEventListener("click", (e) => {
+    const target = e.target;
+    if (target.tagName === "SPAN") {
+      const tagId = parseInt(target.dataset.id, 10);
+      const tagName = target.dataset.tag;
+      const tagColor = target.style.backgroundColor;
+
+      // 如果是状态标签（doing, over, wait），移除其他状态标签
+      if (["doing", "over", "wait"].includes(tagName)) {
+        selectedTags = selectedTags.filter(
+          (tag) => !["doing", "over", "wait"].includes(tag.name)
+        );
+      }
+
+      // 如果标签未被选中，则添加
+      if (!selectedTags.some((tag) => tag.id === tagId)) {
+        selectedTags.push({ id: tagId, name: tagName, color: tagColor });
+      } else {
+        selectedTags = selectedTags.filter((tag) => tag.id !== tagId);
+      }
+      updateTags();
+    }
+  });
+
+// 确认修改
+document
+  .querySelector(".main .main-contain [data-box='set'] .head .submit")
+  .addEventListener("click", async () => {
+    const title = document
+      .querySelector(
+        ".main .main-contain [data-box='set'] > .message-box .input-title input"
+      )
+      .value.trim();
+    const description = document
+      .querySelector(
+        ".main .main-contain [data-box='set'] > .message-box .input-message textarea"
+      )
+      .value.trim();
+    const status = selectedTags.find((tag) =>
+      ["doing", "over", "wait"].includes(tag.name)
+    )?.name;
+
+    if (!title) {
+      alert("请输入项目标题");
+      return;
+    }
+    if (!status) {
+      alert("请至少选择一个状态标签（进行中、已完成、待办）");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/project/update-project/${projectId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              localStorage.getItem("token") || "your-token"
+            }`, // 确保 token 正确
+          },
+          body: JSON.stringify({
+            name: title,
+            description,
+            status,
+            tags: selectedTags.map((tag) => tag.id),
+            admins: admins.map((admin) => admin.id),
+            members: members.map((member) => member.id),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`更新项目失败，状态码: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        alert("项目信息更新成功");
+        window.location.reload(); // 刷新页面以显示更新后的数据
+      } else {
+        alert("更新项目失败：" + result.error);
+      }
+    } catch (error) {
+      console.error("更新项目失败:", error);
+      alert("更新项目失败：" + error.message);
+    }
+  });
+
+// 删除项目弹窗
+document
+  .querySelector(
+    ".main .main-contain [data-box='set'] .message-box > .icon .delete"
+  )
+  .addEventListener("click", () => {
+    const deleteDropdown = document.querySelector(
+      ".main .main-contain [data-box='set'] .message-box > .icon .drop-down"
+    );
+    deleteDropdown.style.display = "flex";
+    document.querySelector("body > .overlay").style.display = "block";
+  });
+
+document
+  .querySelector(
+    ".main .main-contain [data-box='set'] .message-box > .icon .drop-down > .icon .no"
+  )
+  .addEventListener("click", () => {
+    const deleteDropdown = document.querySelector(
+      ".main .main-contain [data-box='set'] .message-box > .icon .drop-down"
+    );
+    deleteDropdown.style.display = "none";
+    document.querySelector("body > .overlay").style.display = "none";
+  });
+
+document
+  .querySelector(
+    ".main .main-contain [data-box='set'] .message-box > .icon .drop-down > .icon .yes"
+  )
+  .addEventListener("click", async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:3000/project/delete-project/${projectId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              localStorage.getItem("token") || "your-token"
+            }`, // 确保 token 正确
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`删除项目失败，状态码: ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        alert("项目删除成功");
+        window.location.href = `http://127.0.0.1:5500/font/public/html/index.html?id=${userId}`; // 假设有一个项目列表页面
+      } else {
+        alert("删除项目失败：" + result.error);
+      }
+    } catch (error) {
+      console.error("删除项目失败:", error);
+      alert("删除项目失败：" + error.message);
+    }
+  });

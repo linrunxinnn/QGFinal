@@ -49,13 +49,13 @@ router.post("/send-code", (req, res) => {
   res.json({ success: true, message: "验证码已发送" });
 });
 
-// 注册
 router.post("/register", async (req, res) => {
   const { firstName, lastName, phone, code, password } = req.body;
   const pool = await getDb();
   const connection = await pool.getConnection();
 
   try {
+    // 验证验证码
     if (!codes[phone] || codes[phone] !== code) {
       return res.json({ success: false, message: "验证码无效" });
     }
@@ -69,17 +69,51 @@ router.post("/register", async (req, res) => {
       return res.json({ success: false, message: "该手机号已注册" });
     }
 
+    // 开始事务
+    await connection.query("BEGIN");
+
     // 插入新用户
     const name = `${firstName} ${lastName}`;
-    await connection.query(
+    const [userResult] = await connection.query(
       "INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)",
       [phone, password, name] // 实际应用中应对密码进行哈希处理
     );
+    const newUserId = userResult.insertId;
+    console.log("新用户注册，userId:", newUserId);
 
+    // 自动添加 id=1 的用户为好友
+    const developerId = 1;
+    // 检查 id=1 是否存在
+    const [developer] = await connection.query(
+      "SELECT id FROM users WHERE id = ?",
+      [developerId]
+    );
+    if (developer.length === 0) {
+      throw new Error("开发者用户 (id=1) 不存在");
+    }
+
+    // 添加好友关系（user_id -> friend_id 和 friend_id -> user_id）
+    await connection.query(
+      "INSERT IGNORE INTO friends (user_id, friend_id,status) VALUES (?, ?,'accepted')",
+      [newUserId, developerId]
+    );
+
+    // 从 id=1 向新用户发送消息
+    const welcomeMessage = "我是开发者，有任何bug可以与我联系，qq：1689785565";
+    await connection.query(
+      "INSERT INTO messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+      [developerId, newUserId, welcomeMessage]
+    );
+
+    // 提交事务
+    await connection.query("COMMIT");
+
+    // 删除验证码
     delete codes[phone];
-    res.json({ success: true, message: "注册成功" });
+    res.json({ success: true, message: "注册成功", userId: newUserId });
   } catch (err) {
     console.error("注册错误:", err);
+    await connection.query("ROLLBACK");
     res.status(500).json({ success: false, message: "服务器错误" });
   } finally {
     connection.release();
