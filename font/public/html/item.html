@@ -122,6 +122,27 @@
           </div>
           <div class="text">工作区</div>
         </div>
+        <div class="item" data-box="manager">
+          <div class="icon">
+            <svg
+              t="1745384005168"
+              class="icon"
+              viewBox="0 0 1024 1024"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+              p-id="2486"
+              width="20"
+              height="20"
+            >
+              <path
+                d="M384 0H85.333333C38.4 0 0 38.4 0 85.333333v298.666667c0 46.933333 38.4 85.333333 85.333333 85.333333h298.666667c46.933333 0 85.333333-38.4 85.333333-85.333333V85.333333c0-46.933333-38.4-85.333333-85.333333-85.333333z m0 384H85.333333V85.333333h298.666667v298.666667z m0 42.666667v-42.666667 42.666667zM938.666667 0H640c-46.933333 0-85.333333 38.4-85.333333 85.333333v298.666667c0 46.933333 38.4 85.333333 85.333333 85.333333h298.666667c46.933333 0 85.333333-38.4 85.333333-85.333333V85.333333c0-46.933333-38.4-85.333333-85.333333-85.333333z m0 384H640V85.333333h298.666667v298.666667zM384 554.666667H85.333333c-46.933333 0-85.333333 38.4-85.333333 85.333333v298.666667c0 46.933333 38.4 85.333333 85.333333 85.333333h298.666667c46.933333 0 85.333333-38.4 85.333333-85.333333V640c0-46.933333-38.4-85.333333-85.333333-85.333333z m0 384H85.333333V640h298.666667v298.666667z m0 42.666666v-42.666666 42.666666zM938.666667 554.666667H640c-46.933333 0-85.333333 38.4-85.333333 85.333333v298.666667c0 46.933333 38.4 85.333333 85.333333 85.333333h298.666667c46.933333 0 85.333333-38.4 85.333333-85.333333V640c0-46.933333-38.4-85.333333-85.333333-85.333333z m0 384H640V640h298.666667v298.666667z"
+                p-id="2487"
+                fill="#8a8a8a"
+              ></path>
+            </svg>
+          </div>
+          <div class="text">管理</div>
+        </div>
         <div class="item" data-box="report">
           <div class="icon">
             <svg
@@ -178,7 +199,7 @@
     </nav>
     <div class="main">
       <div class="main-contain">
-        <div class="item" data-box="main">
+        <div class="item" data-box="main" style="display: none">
           <div class="head">
             <div class="title">项目名称</div>
           </div>
@@ -1605,6 +1626,381 @@
                 <div class="icon">
                   <div class="no">取消</div>
                   <div class="yes">确定</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="item" data-box="manager">
+          <div class="index-box">
+            <div class="page-header">
+              <div class="page-title">拉取请求管理</div>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-value">12</div>
+                <div class="stat-label">待处理拉取请求</div>
+              </div>
+              <!-- <div class="stat-card">
+                <div class="stat-value">25</div>
+                <div class="stat-label">本月合并请求</div>
+              </div> -->
+              <div class="stat-card">
+                <div class="stat-value">5</div>
+                <div class="stat-label">待审核项目</div>
+              </div>
+              <!-- <div class="stat-card">
+                <div class="stat-value">86%</div>
+                <div class="stat-label">通过率</div>
+              </div> -->
+            </div>
+
+            <div class="filter-bar">
+              <select class="filter-select">
+                <option value="all">所有状态</option>
+                <option value="wait">等待审核</option>
+                <option value="approved">已批准</option>
+                <option value="merged">已合并</option>
+                <option value="closed">已关闭</option>
+              </select>
+              <select class="filter-select">
+                <option value="all">所有用户</option>
+                <option value="user1">张三</option>
+                <option value="user2">李四</option>
+                <option value="user3">王五</option>
+              </select>
+              <input
+                type="text"
+                class="search-box"
+                placeholder="搜索拉取请求..."
+              />
+            </div>
+
+            <div class="pull-request-list">
+              <div class="list-header">
+                <div>编号</div>
+                <div>标题</div>
+                <div>状态</div>
+                <div>创建者</div>
+                <div>日期</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#123</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title"
+                    >更新数据库表结构</a
+                  >
+                  <div>
+                    用户管理系统 <span class="badge badge-blue">紧急</span>
+                  </div>
+                </div>
+                <div><span class="pr-status status-wait">等待审核</span></div>
+                <div class="pr-author">张三</div>
+                <div class="pr-date">2025-04-20</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#122</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title"
+                    >修复用户验证功能</a
+                  >
+                  <div>用户管理系统</div>
+                </div>
+                <div><span class="pr-status status-approved">已批准</span></div>
+                <div class="pr-author">李四</div>
+                <div class="pr-date">2025-04-19</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#121</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title"
+                    >优化数据查询性能</a
+                  >
+                  <div>数据仓库项目</div>
+                </div>
+                <div><span class="pr-status status-merged">已合并</span></div>
+                <div class="pr-author">王五</div>
+                <div class="pr-date">2025-04-18</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#120</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title">添加用户仪表盘</a>
+                  <div>数据可视化平台</div>
+                </div>
+                <div><span class="pr-status status-wait">等待审核</span></div>
+                <div class="pr-author">赵六</div>
+                <div class="pr-date">2025-04-17</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#119</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title">更新API文档</a>
+                  <div>API网关服务</div>
+                </div>
+                <div><span class="pr-status status-merged">已合并</span></div>
+                <div class="pr-author">孙七</div>
+                <div class="pr-date">2025-04-16</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#118</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title"
+                    >修复移动端布局问题</a
+                  >
+                  <div>移动应用开发</div>
+                </div>
+                <div><span class="pr-status status-closed">已关闭</span></div>
+                <div class="pr-author">周八</div>
+                <div class="pr-date">2025-04-15</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#117</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title"
+                    >添加数据导出功能</a
+                  >
+                  <div>数据仓库项目</div>
+                </div>
+                <div><span class="pr-status status-merged">已合并</span></div>
+                <div class="pr-author">吴九</div>
+                <div class="pr-date">2025-04-14</div>
+              </div>
+
+              <div class="pull-request-item">
+                <div class="pr-number">#116</div>
+                <div>
+                  <a href="diff-viewer.html" class="pr-title">集成第三方支付</a>
+                  <div>用户管理系统</div>
+                </div>
+                <div><span class="pr-status status-wait">等待审核</span></div>
+                <div class="pr-author">张三</div>
+                <div class="pr-date">2025-04-13</div>
+              </div>
+            </div>
+          </div>
+          <div class="manager-box" style="display: none">
+            <div class="container">
+              <div class="pull-request-header">
+                <div>
+                  <div class="pull-request-title">更新数据库表结构 (#123)</div>
+                  <div class="pull-request-info">
+                    <span>开发者分支 → 主分支</span>
+                    <span>创建人: 张三</span>
+                    <span>创建于: 2025-04-20</span>
+                  </div>
+                </div>
+                <div class="buttons">
+                  <button class="btn">拒绝</button>
+                  <button class="btn btn-primary">通过合并</button>
+                </div>
+              </div>
+
+              <div class="branch-info">
+                <div class="branch-selector">
+                  <select class="branch" id="source-branch">
+                    <option value="feature-branch">开发者分支</option>
+                    <option value="fix-branch">修复分支</option>
+                  </select>
+                  <div>→</div>
+                  <select class="branch" id="target-branch">
+                    <option value="main">主分支</option>
+                    <option value="develop">开发分支</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="files-panel">
+                <div class="files-list">
+                  <div class="files-header">已修改文件 (3)</div>
+                  <div class="file-item active" data-file="createTables.js">
+                    <div>createTables.js</div>
+                    <div class="file-changes">
+                      <span class="file-added">+219</span>
+                      <span class="file-removed">-12</span>
+                    </div>
+                  </div>
+                  <div class="file-item" data-file="schema.sql">
+                    <div>schema.sql</div>
+                    <div class="file-changes">
+                      <span class="file-added">+18</span>
+                      <span class="file-removed">-3</span>
+                    </div>
+                  </div>
+                  <div class="file-item" data-file="model.js">
+                    <div>model.js</div>
+                    <div class="file-changes">
+                      <span class="file-added">+8</span>
+                      <span class="file-removed">-2</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="diff-viewer">
+                  <div class="diff-header">
+                    <div>createTables.js</div>
+                    <div class="diff-actions">
+                      <button class="diff-action">添加评论</button>
+                      <button class="diff-action">查看原文件</button>
+                    </div>
+                  </div>
+                  <div class="diff-content" id="diff-content">
+                    <!-- 正常行 -->
+                    <div class="diff-line">
+                      <div class="line-number">1</div>
+                      <div class="line-content">
+                        const createTables = async (pool) => {
+                      </div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">2</div>
+                      <div class="line-content">
+                        const connection = await pool.getConnection();
+                      </div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">3</div>
+                      <div class="line-content">try {</div>
+                    </div>
+
+                    <!-- 修改行 -->
+                    <div class="diff-line diff-removed">
+                      <div class="line-number">4</div>
+                      <div class="line-content">
+                        await connection.query(`CREATE TABLE IF NOT EXISTS users
+                        (id INT AUTO_INCREMENT PRIMARY KEY)`);
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">4</div>
+                      <div class="line-content">await connection.query(`</div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">5</div>
+                      <div class="line-content">
+                        CREATE TABLE IF NOT EXISTS users (
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">6</div>
+                      <div class="line-content">
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">7</div>
+                      <div class="line-content">
+                        email VARCHAR(255) UNIQUE NOT NULL,
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">8</div>
+                      <div class="line-content">
+                        avatar_url VARCHAR(255) DEFAULT '../img/头像.jpg',
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">9</div>
+                      <div class="line-content">
+                        password_hash VARCHAR(255) NOT NULL,
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">10</div>
+                      <div class="line-content">
+                        role ENUM('admin', 'user') DEFAULT 'user',
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">11</div>
+                      <div class="line-content">name VARCHAR(255),</div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">12</div>
+                      <div class="line-content">
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">13</div>
+                      <div class="line-content">
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE
+                        CURRENT_TIMESTAMP
+                      </div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">14</div>
+                      <div class="line-content">)</div>
+                    </div>
+                    <div class="diff-line diff-added">
+                      <div class="line-number">15</div>
+                      <div class="line-content">`);</div>
+                    </div>
+
+                    <!-- 正常行 -->
+                    <div class="diff-line">
+                      <div class="line-number">16</div>
+                      <div class="line-content"></div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">17</div>
+                      <div class="line-content">// 其他表创建代码...</div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">18</div>
+                      <div class="line-content">} finally {</div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">19</div>
+                      <div class="line-content">connection.release();</div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">20</div>
+                      <div class="line-content">}</div>
+                    </div>
+                    <div class="diff-line">
+                      <div class="line-number">21</div>
+                      <div class="line-content">};</div>
+                    </div>
+                  </div>
+
+                  <div class="comment-list">
+                    <div class="comment">
+                      <div class="comment-header">
+                        <span class="comment-author">李四</span>
+                        <span class="comment-date">2025-04-21 14:32</span>
+                      </div>
+                      <div class="comment-content">
+                        建议添加用户邮箱验证字段，方便后续功能开发。
+                      </div>
+                      <button class="resolve-btn">标记为已解决</button>
+                    </div>
+                    <div class="comment">
+                      <div class="comment-header">
+                        <span class="comment-author">张三</span>
+                        <span class="comment-date">2025-04-22 09:15</span>
+                      </div>
+                      <div class="comment-content">
+                        已经添加了email字段，是不是还需要一个is_verified字段？
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="comment-form">
+                    <textarea
+                      class="comment-textarea"
+                      placeholder="添加评论..."
+                    ></textarea>
+                    <button class="btn btn-primary">提交评论</button>
+                  </div>
                 </div>
               </div>
             </div>

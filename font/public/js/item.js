@@ -382,7 +382,6 @@ function initWorkSpace() {
   }
 }
 
-// 以下是原有的 pull request 相关代码（保持不变）...
 let pullRequests = [];
 let branches = [];
 let users = [];
@@ -402,6 +401,7 @@ function initPullRequests() {
   const urlParams = new URLSearchParams(window.location.search);
   const projectId = urlParams.get("id");
 
+  // 获取拉取请求数据
   fetch(`http://localhost:3000/project/pulls/${projectId}`, {
     method: "GET",
     headers: {
@@ -430,6 +430,7 @@ function initPullRequests() {
       `;
     });
 
+  // 获取分支数据和成员数据，使用 Promise.all 确保只调用一次 initNewPullRequest
   Promise.all([
     fetch(`http://localhost:3000/project/branches/${projectId}`, {
       method: "GET",
@@ -485,37 +486,8 @@ function initPullRequests() {
     });
 }
 
-async function fetchBranches(projectId) {
-  try {
-    const response = await fetch(
-      `http://localhost:3000/project/branches/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`获取分支失败: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error("获取分支数据失败");
-    }
-
-    return data.branches || [];
-  } catch (error) {
-    console.error("获取分支错误:", error);
-    return [];
-  }
-}
-
-// 其他 pull request 相关函数保持不变...
-function renderPullRequests(requests) {
+// 渲染拉取请求列表
+function renderPullRequestsPull(requests) {
   const listBox = document.querySelector('[data-box="pull"] .pull-list .list');
   if (!listBox) {
     console.error("未找到拉取请求列表容器");
@@ -524,6 +496,7 @@ function renderPullRequests(requests) {
   listBox.innerHTML = requests.length
     ? requests
         .map((request) => {
+          // 处理 tags，确保是字符串数组
           const tags = Array.isArray(request.tags)
             ? request.tags.map((tag) =>
                 typeof tag === "string" ? tag : tag.name
@@ -570,6 +543,96 @@ function renderPullRequests(requests) {
     : "<div>暂无拉取请求</div>";
 }
 
+async function fetchBranches(projectId) {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/branches/${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`获取分支失败: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("获取分支数据失败");
+    }
+
+    return data.branches || [];
+  } catch (error) {
+    console.error("获取分支错误:", error);
+    return [];
+  }
+}
+
+// 其他 pull request 相关函数保持不变...
+function renderPullRequests(requests) {
+  const listContainer = document.querySelector(
+    ".main-contain > [data-box='manager'] .pull-request-list"
+  );
+  const listHeader = listContainer.querySelector(".list-header");
+  listContainer.innerHTML = "";
+  listContainer.appendChild(listHeader);
+
+  // 过滤当前项目的拉取请求
+  const projectId = getProjectId();
+  const projectRequests = requests.filter(
+    (request) => request.project_id == projectId
+  );
+
+  if (!projectRequests.length) {
+    listContainer.innerHTML += "<div>暂无拉取请求</div>";
+    return;
+  }
+
+  projectRequests.forEach((request) => {
+    const item = document.createElement("div");
+    item.className = "pull-request-item";
+    item.dataset.prId = request.id;
+    item.innerHTML = `
+      <div class="pr-number">#${request.id}</div>
+      <div>
+        <a href="#" class="pr-title">${request.title}</a>
+        <div>
+          ${request.project_name || "未知项目"}
+          ${
+            request.source_branch && request.target_branch
+              ? `<span class="branch-info">${request.source_branch} → ${request.target_branch}</span>`
+              : ""
+          }
+          ${
+            request.tags?.includes("urgent")
+              ? '<span class="badge badge-blue">紧急</span>'
+              : ""
+          }
+        </div>
+      </div>
+      <div><span class="pr-status status-${request.status}">${
+      request.status === "wait"
+        ? "等待审核"
+        : request.status === "approved"
+        ? "已批准"
+        : request.status === "merged"
+        ? "已合并"
+        : "已关闭"
+    }</span></div>
+      <div class="pr-author">${request.creator_name || "未知用户"}</div>
+      <div class="pr-date">${
+        new Date(request.created_at).toISOString().split("T")[0]
+      }</div>
+    `;
+    listContainer.appendChild(item);
+  });
+}
+
+// 初始化筛选下拉框并实时过滤
 function initFilterOptions(requests) {
   const authorSelect = document.querySelector("#author");
   const statusSelect = document.querySelector("#status");
@@ -651,421 +714,6 @@ function initFilterOptions(requests) {
     select.addEventListener("change", filterRequests);
   });
 }
-
-// function initNewPullRequest() {
-//   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
-//   const pullSection = pullBox.querySelector(".pull-box");
-//   const newPullSection = pullBox.querySelector(".new-pull");
-//   const newPullBtn = pullSection.querySelector(".head .icon");
-//   const backBtn = newPullSection.querySelector(".head .icon");
-
-//   if (!pullBox || !pullSection || !newPullSection || !newPullBtn || !backBtn) {
-//     console.error("拉取请求相关元素未找到");
-//     return;
-//   }
-
-//   newPullBtn.addEventListener("click", () => {
-//     pullSection.style.display = "none";
-//     newPullSection.style.display = "flex";
-//   });
-//   backBtn.addEventListener("click", () => {
-//     pullSection.style.display = "flex";
-//     newPullSection.style.display = "none";
-//   });
-
-//   const actionSelect = newPullSection.querySelector(
-//     ".new-pull-box > .head #action"
-//   );
-//   const pullBoxSection = newPullSection.querySelector(
-//     ".new-pull-box > .head .pull-box"
-//   );
-//   const mergeBoxSection = newPullSection.querySelector(
-//     ".new-pull-box > .head .merge-box"
-//   );
-
-//   if (!actionSelect || !pullBoxSection || !mergeBoxSection) {
-//     console.error("拉取/合并模式元素未找到");
-//     return;
-//   }
-
-//   pullBoxSection.style.display =
-//     actionSelect.value === "pull-box" ? "flex" : "none";
-//   mergeBoxSection.style.display =
-//     actionSelect.value === "merge-box" ? "flex" : "none";
-
-//   actionSelect.addEventListener("change", () => {
-//     const action = actionSelect.value;
-//     pullBoxSection.style.display = action === "pull-box" ? "flex" : "none";
-//     mergeBoxSection.style.display = action === "merge-box" ? "flex" : "none";
-//   });
-
-//   const fromDropdown = pullBoxSection.querySelector(".from .drop-down");
-//   const fromIcon = pullBoxSection.querySelector(".from .icon");
-//   const fromSpan = pullBoxSection.querySelector(".from .icon .select-from");
-
-//   if (!fromDropdown || !fromIcon || !fromSpan) {
-//     console.error("pull-box 分支下拉菜单元素未找到");
-//     return;
-//   }
-
-//   fromDropdown.innerHTML = branches
-//     .map(
-//       (branch) => `
-//         <div class="branch-item" data-branch-id="${
-//           branch.id
-//         }" data-branch-name="${branch.name}">
-//           ${branch.name}${branch.is_main ? " (主分支)" : ""}
-//         </div>
-//       `
-//     )
-//     .join("");
-
-//   const defaultFromBranch =
-//     branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
-//   if (defaultFromBranch) {
-//     fromSpan.textContent = defaultFromBranch.name;
-//     fromSpan.dataset.branchId = defaultFromBranch.id;
-//   } else {
-//     fromSpan.textContent = "无分支";
-//     fromSpan.dataset.branchId = "";
-//   }
-
-//   fromIcon.addEventListener("click", (e) => {
-//     e.stopPropagation();
-//     fromDropdown.style.display = "flex";
-//   });
-
-//   fromDropdown.querySelectorAll(".branch-item").forEach((item) => {
-//     item.addEventListener("click", () => {
-//       fromSpan.textContent = item.getAttribute("data-branch-name");
-//       fromSpan.dataset.branchId = item.getAttribute("data-branch-id");
-//       fromDropdown.style.display = "none";
-//     });
-//   });
-
-//   document.addEventListener("click", () => {
-//     fromDropdown.style.display = "none";
-//   });
-
-//   const mergeFromDropdown = mergeBoxSection.querySelector(".from .drop-down");
-//   const mergeToDropdown = mergeBoxSection.querySelector(".to .drop-down");
-//   const mergeFromIcon = mergeBoxSection.querySelector(".from .icon");
-//   const mergeToIcon = mergeBoxSection.querySelector(".to .icon");
-//   const mergeFromSpan = mergeBoxSection.querySelector(".from .select-from");
-//   const mergeToSpan = mergeBoxSection.querySelector(".to .select-to");
-
-//   if (
-//     mergeFromDropdown &&
-//     mergeToDropdown &&
-//     mergeFromIcon &&
-//     mergeToIcon &&
-//     mergeFromSpan &&
-//     mergeToSpan
-//   ) {
-//     mergeFromDropdown.innerHTML = branches
-//       .map(
-//         (branch) => `
-//           <div class="branch-item" data-branch-id="${
-//             branch.id
-//           }" data-branch-name="${branch.name}">
-//             ${branch.name}${branch.is_main ? " (主分支)" : ""}
-//           </div>
-//         `
-//       )
-//       .join("");
-//     mergeToDropdown.innerHTML = branches
-//       .map(
-//         (branch) => `
-//           <div class="branch-item" data-branch-id="${
-//             branch.id
-//           }" data-branch-name="${branch.name}">
-//             ${branch.name}${branch.is_main ? " (主分支)" : ""}
-//           </div>
-//         `
-//       )
-//       .join("");
-
-//     const defaultMergeFromBranch =
-//       branches.find((b) => b.id === Number(currentBranchId)) || branches[0];
-//     const defaultMergeToBranch = branches.find((b) => b.is_main) || branches[0];
-//     if (defaultMergeFromBranch) {
-//       mergeFromSpan.textContent = defaultMergeFromBranch.name;
-//       mergeFromSpan.dataset.branchId = defaultMergeFromBranch.id;
-//     }
-//     if (defaultMergeToBranch) {
-//       mergeToSpan.textContent = defaultMergeToBranch.name;
-//       mergeToSpan.dataset.branchId = defaultMergeToBranch.id;
-//     }
-
-//     mergeFromIcon.addEventListener("click", (e) => {
-//       e.stopPropagation();
-//       mergeFromDropdown.style.display = "flex";
-//     });
-//     mergeToIcon.addEventListener("click", (e) => {
-//       e.stopPropagation();
-//       mergeToDropdown.style.display = "flex";
-//     });
-
-//     mergeFromDropdown.querySelectorAll(".branch-item").forEach((item) => {
-//       item.addEventListener("click", () => {
-//         mergeFromSpan.textContent = item.getAttribute("data-branch-name");
-//         mergeFromSpan.dataset.branchId = item.getAttribute("data-branch-id");
-//         mergeFromDropdown.style.display = "none";
-//       });
-//     });
-//     mergeToDropdown.querySelectorAll(".branch-item").forEach((item) => {
-//       item.addEventListener("click", () => {
-//         mergeToSpan.textContent = item.getAttribute("data-branch-name");
-//         mergeToSpan.dataset.branchId = item.getAttribute("data-branch-id");
-//         mergeToDropdown.style.display = "none";
-//       });
-//     });
-
-//     document.addEventListener("click", () => {
-//       mergeFromDropdown.style.display = "none";
-//       mergeToDropdown.style.display = "none";
-//     });
-//   }
-
-//   const tagList = newPullSection.querySelector(".tag-box .tag-list");
-//   const inputTag = newPullSection.querySelector(".tag-box .input-tag");
-//   const availableTags = new Map();
-
-//   if (!tagList || !inputTag) {
-//     console.error("标签选择元素未找到");
-//     return;
-//   }
-
-//   const urlParams = new URLSearchParams(window.location.search);
-//   const projectId = urlParams.get("id");
-
-//   fetch(`http://localhost:3000/project/tags/${projectId}`, {
-//     method: "GET",
-//     headers: {
-//       Authorization: `Bearer ${localStorage.getItem("token")}`,
-//       "Content-Type": "application/json",
-//     },
-//   })
-//     .then((response) => {
-//       if (!response.ok) {
-//         throw new Error(`获取标签失败: ${response.statusText}`);
-//       }
-//       return response.json();
-//     })
-//     .then((data) => {
-//       if (!data.success) {
-//         throw new Error("获取标签数据失败");
-//       }
-
-//       const tags = data.tags || [];
-//       tagList.innerHTML = "";
-//       tags.forEach((tag) => {
-//         const tagId = String(tag.id);
-//         const tagElement = document.createElement("span");
-//         tagElement.setAttribute("data-tag", tagId);
-//         tagElement.textContent = tag.name;
-//         tagElement.style.backgroundColor = tag.color || "#e67700";
-//         tagElement.style.color = "#fff";
-//         tagElement.style.padding = "5px 10px";
-//         tagElement.style.borderRadius = "5px";
-//         tagElement.style.margin = "2px";
-//         tagList.appendChild(tagElement);
-//         availableTags.set(tagId, {
-//           name: tag.name,
-//           color: tag.color || "#e67700",
-//           element: tagElement.cloneNode(true),
-//         });
-
-//         tagElement.addEventListener("click", handleTagAdd);
-//       });
-//     })
-//     .catch((error) => {
-//       console.error("获取标签错误:", error);
-//       tagList.innerHTML = `<div class="error">加载标签失败：${error.message}</div>`;
-//     });
-
-//   function handleTagAdd(e) {
-//     const tag = e.target;
-//     const tagId = String(tag.getAttribute("data-tag"));
-//     const tagInfo = availableTags.get(tagId);
-
-//     if (!tagInfo) {
-//       console.error(`未找到标签信息，tagId: ${tagId}`);
-//       return;
-//     }
-
-//     const newTag = document.createElement("span");
-//     newTag.setAttribute("data-tag", tagId);
-//     newTag.className = "tag-item";
-//     newTag.textContent = tagInfo.name;
-//     newTag.style.backgroundColor = tagInfo.color;
-//     newTag.style.borderRadius = "5px";
-//     newTag.style.padding = "5px 10px";
-//     newTag.style.color = "#fff";
-//     newTag.style.margin = "2px";
-//     inputTag.appendChild(newTag);
-//     selectedTags.add(tagId);
-
-//     tag.remove();
-//   }
-
-//   inputTag.addEventListener("click", (e) => {
-//     if (e.target.classList.contains("tag-item")) {
-//       const tagId = String(e.target.getAttribute("data-tag"));
-//       const tagInfo = availableTags.get(tagId);
-
-//       if (!tagInfo) {
-//         console.error(`未找到标签信息，tagId: ${tagId}`);
-//         return;
-//       }
-
-//       const existingTag = tagList.querySelector(`[data-tag="${tagId}"]`);
-//       if (!existingTag) {
-//         const newTag = tagInfo.element.cloneNode(true);
-//         newTag.addEventListener("click", handleTagAdd);
-//         tagList.appendChild(newTag);
-//       } else {
-//         console.log(`标签 ${tagId} 已存在于 .tag-list 中，不重复添加`);
-//       }
-
-//       e.target.remove();
-//       selectedTags.delete(tagId);
-//     }
-//   });
-
-//   const submitBtn = newPullSection.querySelector(".submit");
-//   if (submitBtn) {
-//     submitBtn.addEventListener("click", () => {
-//       const action = actionSelect.value;
-//       const section = action === "pull-box" ? pullBoxSection : mergeBoxSection;
-//       const fromSpan = section.querySelector(".from .select-from");
-//       const toSpan = section.querySelector(".to .select-to");
-//       const titleInput = newPullSection.querySelector(".title-input");
-//       const messageInput = newPullSection.querySelector("#message");
-//       const deadlineInput = newPullSection.querySelector(".deadline .date");
-
-//       const fromBranchId = fromSpan.dataset.branchId;
-//       const toBranchId = toSpan ? toSpan.dataset.branchId : null;
-//       const title = titleInput ? titleInput.value : "";
-//       const message = messageInput ? messageInput.value : "";
-//       const tags = Array.from(selectedTags);
-//       const managers = Array.from(selectedManagers);
-//       const deadline = deadlineInput ? deadlineInput.value : "";
-
-//       if (!title || !message || !fromBranchId) {
-//         alert("请填写所有必填字段！");
-//         return;
-//       }
-
-//       const requestBody = {
-//         projectId,
-//         title,
-//         description: message,
-//         sourceBranchId: fromBranchId,
-//         status: "wait",
-//         deadline,
-//         tags,
-//         members: managers,
-//       };
-
-//       if (action === "merge-box" && toBranchId) {
-//         requestBody.targetBranchId = toBranchId;
-//       }
-
-//       if (action === "pull-box") {
-//         fetch(`http://localhost:3000/project/pulls/create`, {
-//           method: "POST",
-//           headers: {
-//             Authorization: `Bearer ${localStorage.getItem("token")}`,
-//             "Content-Type": "application/json",
-//           },
-//           body: JSON.stringify(requestBody),
-//         })
-//           .then((response) => {
-//             if (!response.ok) {
-//               return response.json().then((errorData) => {
-//                 throw new Error(
-//                   errorData.error || `HTTP错误: ${response.status}`
-//                 );
-//               });
-//             }
-//             return response.json();
-//           })
-//           .then((data) => {
-//             if (!data.success) {
-//               throw new Error("创建拉取请求失败");
-//             }
-//             alert("拉取请求创建成功！");
-//             if (titleInput) titleInput.value = "";
-//             if (messageInput) messageInput.value = "";
-//             selectedTags.clear();
-//             inputTag.innerHTML = "";
-//             tagList.innerHTML = "";
-//             availableTags.forEach((tagInfo, tagId) => {
-//               const newTag = tagInfo.element.cloneNode(true);
-//               newTag.addEventListener("click", handleTagAdd);
-//               tagList.appendChild(newTag);
-//             });
-//             selectedManagers.clear();
-//             const managerList = newPullSection.querySelector(".manager-list");
-//             if (managerList) managerList.innerHTML = "";
-//             pullSection.style.display = "flex";
-//             newPullSection.style.display = "none";
-//             initPullRequests();
-//           })
-//           .catch((error) => {
-//             console.error("创建拉取请求错误:", error);
-//             alert("创建失败：" + error.message);
-//           });
-//       } else {
-//         fetch(`http://localhost:3000/project/merge/create`, {
-//           method: "POST",
-//           headers: {
-//             Authorization: `Bearer ${localStorage.getItem("token")}`,
-//             "Content-Type": "application/json",
-//           },
-//           body: JSON.stringify(requestBody),
-//         })
-//           .then((response) => {
-//             if (!response.ok) {
-//               return response.json().then((errorData) => {
-//                 throw new Error(
-//                   errorData.error || `HTTP错误: ${response.status}`
-//                 );
-//               });
-//             }
-//             return response.json();
-//           })
-//           .then((data) => {
-//             if (!data.success) {
-//               throw new Error("创建合并请求失败");
-//             }
-//             alert("合并请求创建成功！");
-//             if (titleInput) titleInput.value = "";
-//             if (messageInput) messageInput.value = "";
-//             selectedTags.clear();
-//             inputTag.innerHTML = "";
-//             tagList.innerHTML = "";
-//             availableTags.forEach((tagInfo, tagId) => {
-//               const newTag = tagInfo.element.cloneNode(true);
-//               newTag.addEventListener("click", handleTagAdd);
-//               tagList.appendChild(newTag);
-//             });
-//             selectedManagers.clear();
-//             const managerList = newPullSection.querySelector(".manager-list");
-//             if (managerList) managerList.innerHTML = "";
-//             pullSection.style.display = "flex";
-//             newPullSection.style.display = "none";
-//             initPullRequests();
-//           })
-//           .catch((error) => {
-//             console.error("创建合并请求错误:", error);
-//             alert("创建失败：" + error.message);
-//           });
-//       }
-//     });
-//   }
-// }
 
 function initResponsibility() {
   const pullBox = document.querySelector('.main-contain > [data-box="pull"]');
@@ -1174,24 +822,18 @@ function initSectionToggle(pullBox) {
 }
 
 // 初始化分支选择
-function initBranchSelection(
-  section,
-  type,
-  branches,
-  defaultBranchId,
-  mainBranchId
-) {
+function initBranchSelection(section, type, branches) {
   const dropdown = section.querySelector(`.${type} .drop-down`);
   const icon = section.querySelector(`.${type} .icon`);
   const span = section.querySelector(`.${type} .select-${type}`);
 
   if (!dropdown || !icon || !span) {
-    console.error(`${type} 分支下拉菜单元素未找到`);
+    console.error(`${type} 分支下拉菜单元素未找到`, { dropdown, icon, span });
     return;
   }
 
   // 填充下拉菜单
-  dropdown.innerHTML = branches
+  let dropdownContent = branches
     .map(
       (branch) => `
       <div class="branch-item" data-branch-id="${
@@ -1203,13 +845,22 @@ function initBranchSelection(
     )
     .join("");
 
+  // 如果是目标分支（to），添加“新建空白分支”选项
+  if (type === "to") {
+    dropdownContent += `
+      <div class="branch-item" data-branch-id="new-blank" data-branch-name="新建空白分支">
+        新建空白分支
+      </div>
+    `;
+  }
+
+  dropdown.innerHTML = dropdownContent;
+
   // 设置默认值
-  // 源分支（from）：默认选择第一个分支
-  // 目标分支（to）：默认选择主分支（如果存在），否则选择第一个分支
   const defaultBranch =
     type === "from"
-      ? branches[0] // 源分支默认选择第一个分支
-      : branches.find((b) => b.is_main) || branches[0]; // 目标分支默认选择主分支
+      ? branches[0]
+      : branches.find((b) => b.is_main) || branches[0];
 
   if (defaultBranch) {
     span.textContent = defaultBranch.name;
@@ -1219,13 +870,11 @@ function initBranchSelection(
     span.dataset.branchId = "";
   }
 
-  // 点击图标显示下拉菜单
   icon.addEventListener("click", (e) => {
     e.stopPropagation();
     dropdown.style.display = "flex";
   });
 
-  // 选择分支
   dropdown.querySelectorAll(".branch-item").forEach((item) => {
     item.addEventListener("click", () => {
       span.textContent = item.getAttribute("data-branch-name");
@@ -1234,7 +883,6 @@ function initBranchSelection(
     });
   });
 
-  // 点击页面其他地方关闭下拉菜单
   document.addEventListener("click", () => {
     dropdown.style.display = "none";
   });
@@ -1242,125 +890,18 @@ function initBranchSelection(
   return span;
 }
 
-// 初始化标签选择
-async function initTagSelection(newPullSection, projectId, selectedTags) {
-  const tagList = newPullSection.querySelector(".tag-box .tag-list");
-  const inputTag = newPullSection.querySelector(".tag-box .input-tag");
-  const availableTags = new Map();
-
-  if (!tagList || !inputTag) {
-    console.error("标签选择元素未找到");
-    return;
-  }
-
-  try {
-    const response = await fetch(
-      `http://localhost:3000/project/tags/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`获取标签失败: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    if (!data.success) {
-      throw new Error("获取标签数据失败");
-    }
-
-    const tags = data.tags || [];
-    tagList.innerHTML = "";
-    tags.forEach((tag) => {
-      const tagId = String(tag.id);
-      const tagElement = document.createElement("span");
-      tagElement.setAttribute("data-tag", tagId);
-      tagElement.textContent = tag.name;
-      tagElement.style.backgroundColor = tag.color || "#e67700";
-      tagElement.style.color = "#fff";
-      tagElement.style.padding = "5px 10px";
-      tagElement.style.borderRadius = "5px";
-      tagElement.style.margin = "2px";
-      tagList.appendChild(tagElement);
-      availableTags.set(tagId, {
-        name: tag.name,
-        color: tag.color || "#e67700",
-        element: tagElement.cloneNode(true),
-      });
-
-      tagElement.addEventListener("click", handleTagAdd);
-    });
-
-    function handleTagAdd(e) {
-      const tag = e.target;
-      const tagId = String(tag.getAttribute("data-tag"));
-      const tagInfo = availableTags.get(tagId);
-
-      if (!tagInfo) {
-        console.error(`未找到标签信息，tagId: ${tagId}`);
-        return;
-      }
-
-      const newTag = document.createElement("span");
-      newTag.setAttribute("data-tag", tagId);
-      newTag.className = "tag-item";
-      newTag.textContent = tagInfo.name;
-      newTag.style.backgroundColor = tagInfo.color;
-      newTag.style.borderRadius = "5px";
-      newTag.style.padding = "5px 10px";
-      newTag.style.color = "#fff";
-      newTag.style.margin = "2px";
-      inputTag.appendChild(newTag);
-      selectedTags.add(tagId);
-
-      tag.remove();
-    }
-
-    inputTag.addEventListener("click", (e) => {
-      if (e.target.classList.contains("tag-item")) {
-        const tagId = String(e.target.getAttribute("data-tag"));
-        const tagInfo = availableTags.get(tagId);
-
-        if (!tagInfo) {
-          console.error(`未找到标签信息，tagId: ${tagId}`);
-          return;
-        }
-
-        const existingTag = tagList.querySelector(`[data-tag="${tagId}"]`);
-        if (!existingTag) {
-          const newTag = tagInfo.element.cloneNode(true);
-          newTag.addEventListener("click", handleTagAdd);
-          tagList.appendChild(newTag);
-        }
-        e.target.remove();
-        selectedTags.delete(tagId);
-      }
-    });
-
-    return availableTags;
-  } catch (error) {
-    console.error("获取标签错误:", error);
-    tagList.innerHTML = `<div class="error">加载标签失败：${error.message}</div>`;
-  }
-}
-
-// 提交拉取请求
 async function submitPullRequest(
   newPullSection,
   pullSection,
   projectId,
   selectedTags,
   selectedManagers,
-  availableTags
+  availableTags,
+  handleTagAdd
 ) {
   const section = newPullSection.querySelector(
     ".new-pull-box > .head .merge-box"
-  ); // 直接使用 merge-box 样式
+  );
   const fromSpan = section.querySelector(".from .select-from");
   const toSpan = section.querySelector(".to .select-to");
   const titleInput = newPullSection.querySelector(".title-input");
@@ -1368,20 +909,113 @@ async function submitPullRequest(
   const deadlineInput = newPullSection.querySelector(".deadline .date");
   const tagList = newPullSection.querySelector(".tag-box .tag-list");
   const inputTag = newPullSection.querySelector(".tag-box .input-tag");
+  const submitBtn = newPullSection.querySelector(".submit");
 
-  const sourceBranchId = fromSpan.dataset.branchId;
-  const targetBranchId = toSpan.dataset.branchId;
+  let sourceBranchId = fromSpan.dataset.branchId;
+  let targetBranchId = toSpan.dataset.branchId;
   const title = titleInput ? titleInput.value.trim() : "";
   const description = messageInput ? messageInput.value.trim() : "";
   const tags = Array.from(selectedTags);
   const members = Array.from(selectedManagers);
   const deadline = deadlineInput ? deadlineInput.value : "";
 
-  // 验证必填字段
-  if (!title || !description || !sourceBranchId || !targetBranchId) {
-    alert("请填写所有必填字段，包括源分支和目标分支！");
+  if (!title) {
+    alert("请输入拉取请求标题！");
     return;
   }
+  if (!description) {
+    alert("请输入拉取请求描述！");
+    return;
+  }
+  if (!sourceBranchId) {
+    alert("请选择源分支！");
+    return;
+  }
+
+  const hasStatusTag = tags.some((tagId) => {
+    const tag = availableTags.get(tagId);
+    return tag && ["doing", "over", "wait"].includes(tag.name);
+  });
+  // if (!hasStatusTag) {
+  //   alert("请至少选择一个状态标签（进行中、已完成、待办）！");
+  //   return;
+  // }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "提交中...";
+
+  let isNewBlankBranch = targetBranchId === "new-blank";
+  if (isNewBlankBranch) {
+    const sourceBranchName = fromSpan.textContent;
+    const defaultBranchName = `copy-from-${sourceBranchName}-${Date.now()}`;
+    const newBranchName = prompt("请输入新分支名称：", defaultBranchName);
+
+    if (!newBranchName) {
+      alert("新分支名称不能为空！");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "提交";
+      return;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(newBranchName)) {
+      alert("分支名称只能包含字母、数字、下划线和连字符！");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "提交";
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/project/branches/create`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            projectId,
+            baseBranchId: sourceBranchId,
+            newBranchName,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "无法创建新分支，请稍后重试！");
+      }
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error("创建新分支失败，请检查输入！");
+      }
+
+      targetBranchId = data.branchId;
+      toSpan.textContent = newBranchName;
+      toSpan.dataset.branchId = targetBranchId;
+
+      branches = await fetchBranches(projectId);
+      initBranchSelection(section, "from", branches);
+      initBranchSelection(section, "to", branches);
+
+      alert(`已创建新分支：${newBranchName}，并添加了根文件夹`);
+    } catch (error) {
+      console.error("创建新分支错误:", error);
+      alert(`创建新分支失败：${error.message}`);
+      submitBtn.disabled = false;
+      submitBtn.textContent = "提交";
+      return;
+    }
+  }
+
+  if (!targetBranchId) {
+    alert("请选择目标分支！");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "提交";
+    return;
+  }
+
+  const status = isNewBlankBranch ? "approved" : "wait";
 
   const requestBody = {
     projectId,
@@ -1389,7 +1023,7 @@ async function submitPullRequest(
     description,
     sourceBranchId,
     targetBranchId,
-    status: "wait",
+    status,
     deadline,
     tags,
     members,
@@ -1407,16 +1041,53 @@ async function submitPullRequest(
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP错误: ${response.status}`);
+      throw new Error(errorData.error || "提交拉取请求失败，请稍后重试！");
     }
 
     const data = await response.json();
     if (!data.success) {
-      throw new Error("创建拉取请求失败");
+      throw new Error("创建拉取请求失败，请检查输入！");
     }
 
-    alert("拉取请求创建成功！");
-    // 重置表单
+    const pullRequestId = data.pullRequestId;
+
+    if (isNewBlankBranch) {
+      try {
+        const mergeResponse = await fetch(
+          `http://localhost:3000/project/pulls/${pullRequestId}/merge`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!mergeResponse.ok) {
+          const errorData = await mergeResponse.json();
+          throw new Error(
+            errorData.error || "自动合并失败，可能是分支冲突或权限不足！"
+          );
+        }
+
+        const mergeData = await mergeResponse.json();
+        if (!mergeData.success) {
+          throw new Error("自动合并失败！");
+        }
+
+        alert("拉取请求已创建并自动合并！");
+      } catch (error) {
+        console.error("自动合并错误:", error);
+        alert(`自动合并失败：${error.message}`);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "提交";
+        return;
+      }
+    } else {
+      alert("拉取请求创建成功，等待管理员审核！");
+    }
+
     if (titleInput) titleInput.value = "";
     if (messageInput) messageInput.value = "";
     selectedTags.clear();
@@ -1424,7 +1095,7 @@ async function submitPullRequest(
     tagList.innerHTML = "";
     availableTags.forEach((tagInfo, tagId) => {
       const newTag = tagInfo.element.cloneNode(true);
-      newTag.addEventListener("click", tagList.handleTagAdd);
+      newTag.addEventListener("click", handleTagAdd);
       tagList.appendChild(newTag);
     });
     selectedManagers.clear();
@@ -1435,7 +1106,10 @@ async function submitPullRequest(
     initPullRequests();
   } catch (error) {
     console.error("创建拉取请求错误:", error);
-    alert(`创建失败：${error.message}`);
+    alert(`创建拉取请求失败：${error.message}`);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "提交";
   }
 }
 
@@ -1447,46 +1121,6 @@ async function initNewPullRequest() {
     return;
   }
 
-  // const { pullSection, newPullSection } = initSectionToggle(pullBox);
-  // const section = newPullSection.querySelector(
-  //   ".new-pull-box > .head .merge-box"
-  // );
-  // section.style.display = "flex"; // 始终显示
-
-  // const urlParams = new URLSearchParams(window.location.search);
-  // const projectId = urlParams.get("id");
-  // const currentBranchId = urlParams.get("branchId"); // 假设可以从 URL 获取
-  // const branches = await fetchBranches(projectId); // 假设有一个函数获取分支
-
-  // const fromSpan = initBranchSelection(
-  //   section,
-  //   "from",
-  //   branches,
-  //   currentBranchId
-  // );
-  // const toSpan = initBranchSelection(section, "to", branches, null, true);
-
-  // const selectedTags = new Set();
-  // const selectedManagers = new Set();
-  // const availableTags = await initTagSelection(
-  //   newPullSection,
-  //   projectId,
-  //   selectedTags
-  // );
-
-  // const submitBtn = newPullSection.querySelector(".submit");
-  // if (submitBtn) {
-  //   submitBtn.addEventListener("click", () => {
-  //     submitPullRequest(
-  //       newPullSection,
-  //       pullSection,
-  //       projectId,
-  //       selectedTags,
-  //       selectedManagers,
-  //       availableTags
-  //     );
-  //   });
-  // }
   const { pullSection, newPullSection } = initSectionToggle(pullBox);
   const section = newPullSection.querySelector(
     ".new-pull-box > .head .merge-box"
@@ -1526,6 +1160,7 @@ async function initNewPullRequest() {
 
 initPullRequests();
 
+// ---------------------------------------------------
 //修改项目内容
 const projectId = new URLSearchParams(window.location.search).get("id");
 selectedTags = [];
@@ -1595,6 +1230,62 @@ async function initProject() {
     console.error("初始化项目失败:", error);
     alert("初始化项目失败：" + error.message);
   }
+}
+
+function renderPullRequestsForPullPage(requests) {
+  const listBox = document.querySelector('[data-box="pull"] .pull-list .list');
+  if (!listBox) {
+    console.error("未找到拉取请求列表容器");
+    return;
+  }
+
+  listBox.innerHTML = requests.length
+    ? requests
+        .map((request) => {
+          const tags = Array.isArray(request.tags)
+            ? request.tags.map((tag) =>
+                typeof tag === "string" ? tag : tag.name
+              )
+            : [];
+          return `
+            <div class="item" data-id="${request.id}">
+              <div class="left">
+                <div class="title">${request.title || "未命名拉取请求"}</div>
+                <div class="branch-info">${
+                  request.from_branch && request.to_branch
+                    ? `${request.from_branch} → ${request.to_branch}`
+                    : "未知分支"
+                }</div>
+                <div class="author">${request.author_name || "未知作者"}</div>
+              </div>
+              <div class="status">
+                <span data-status="${request.status}">${
+            request.status === "doing"
+              ? "进行中"
+              : request.status === "over"
+              ? "已完成"
+              : "待办"
+          }</span>
+                ${tags
+                  .map(
+                    (tag) =>
+                      `<span data-tag="${tag}" style="background-color: ${
+                        tag === "doing"
+                          ? "#e67700"
+                          : tag === "over"
+                          ? "#862e9c"
+                          : tag === "wait"
+                          ? "#74b816"
+                          : "#e67700"
+                      }; color: #fff">${tag}</span>`
+                  )
+                  .join("")}
+              </div>
+            </div>
+          `;
+        })
+        .join("")
+    : "<div>暂无拉取请求</div>";
 }
 
 // 获取当前用户的所有朋友和项目成员
@@ -2023,3 +1714,446 @@ document
       alert("删除项目失败：" + error.message);
     }
   });
+
+// -------------------------------
+// 管理页面
+// let pullRequests = [];
+let currentPullRequest = null;
+let currentFile = "createTables.js"; // 当前显示的文件
+
+// 初始化管理员页面
+async function initManagerPage() {
+  await fetchPullRequests();
+  renderStats();
+  initFilterListeners();
+  initPullRequestListeners();
+}
+
+// 获取拉取请求数据
+// async function fetchPullRequests() {
+//   try {
+//     const response = await fetch(`http://localhost:3000/project/pulls/all`, {
+//       method: "GET",
+//       headers: {
+//         Authorization: `Bearer ${localStorage.getItem("token")}`,
+//         "Content-Type": "application/json",
+//       },
+//     });
+
+//     if (!response.ok) {
+//       throw new Error(`获取拉取请求失败: ${response.statusText}`);
+//     }
+
+//     const data = await response.json();
+//     if (!data.success) {
+//       throw new Error("获取拉取请求数据失败");
+//     }
+
+//     pullRequests = data.pullRequests || [];
+//     renderPullRequests(pullRequests);
+//   } catch (error) {
+//     console.error("获取拉取请求错误:", error);
+//     document.querySelector(".pull-request-list").innerHTML += `
+//       <div class="error">加载失败：${error.message}</div>
+//     `;
+//   }
+// }
+async function fetchPullRequests() {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      document.querySelector(".pull-request-list").innerHTML = `
+        <div class="error">未登录，请<a href="login.html">登录</a></div>
+      `;
+      throw new Error("未登录，请先登录");
+    }
+
+    const projectId = getProjectId();
+    const response = await fetch(
+      `http://localhost:3000/project/pulls/all?projectId=${projectId}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("获取拉取请求数据失败");
+    }
+
+    pullRequests = data.pullRequests || [];
+    renderPullRequests(pullRequests);
+  } catch (error) {
+    console.error("获取拉取请求错误:", error);
+    document.querySelector(".pull-request-list").innerHTML += `
+      <div class="error">加载失败：${error.message}</div>
+    `;
+  }
+}
+
+function getProjectId() {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get("id") || "38"; // 回退到日志中的项目ID
+}
+
+// 渲染统计数据
+function renderStats() {
+  const stats = {
+    pending: pullRequests.filter((pr) => pr.status === "wait").length,
+    pendingProjects: [
+      ...new Set(
+        pullRequests
+          .filter((pr) => pr.status === "wait")
+          .map((pr) => pr.project_id)
+      ),
+    ].length,
+  };
+
+  document.querySelector(
+    ".stats-grid .stat-card:nth-child(1) .stat-value"
+  ).textContent = stats.pending;
+  document.querySelector(
+    ".stats-grid .stat-card:nth-child(2) .stat-value"
+  ).textContent = stats.pendingProjects;
+}
+
+// 渲染拉取请求列表
+function renderPullRequests(requests) {
+  const listContainer = document.querySelector(
+    ".main-contain > [data-box='manager'] .pull-request-list"
+  );
+  const listHeader = listContainer.querySelector(".list-header");
+  listContainer.innerHTML = "";
+  listContainer.appendChild(listHeader);
+
+  if (!requests.length) {
+    listContainer.innerHTML += "<div>暂无拉取请求</div>";
+    return;
+  }
+
+  requests.forEach((request) => {
+    const item = document.createElement("div");
+    item.className = "pull-request-item";
+    item.dataset.prId = request.id;
+    item.innerHTML = `
+      <div class="pr-number">#${request.id}</div>
+      <div>
+        <a href="#" class="pr-title">${request.title}</a>
+        <div>
+          ${request.project_name || "未知项目"}
+          ${
+            request.tags?.includes("urgent")
+              ? '<span class="badge badge-blue">紧急</span>'
+              : ""
+          }
+        </div>
+      </div>
+      <div><span class="pr-status status-${request.status}">${
+      request.status === "wait"
+        ? "等待审核"
+        : request.status === "approved"
+        ? "已批准"
+        : request.status === "merged"
+        ? "已合并"
+        : "已关闭"
+    }</span></div>
+      <div class="pr-author">${request.creator_name || "未知用户"}</div>
+      <div class="pr-date">${
+        new Date(request.created_at).toISOString().split("T")[0]
+      }</div>
+    `;
+    listContainer.appendChild(item);
+  });
+}
+
+// 初始化筛选功能
+function initFilterListeners() {
+  const statusSelect = document.querySelector(
+    ".filter-bar select:nth-child(1)"
+  );
+  const userSelect = document.querySelector(".filter-bar select:nth-child(2)");
+  const searchInput = document.querySelector(".filter-bar .search-box");
+
+  function filterPullRequests() {
+    const status = statusSelect.value;
+    const user = userSelect.value;
+    const search = searchInput.value.toLowerCase();
+
+    const filteredRequests = pullRequests.filter((request) => {
+      return (
+        (status === "all" || request.status === status) &&
+        (user === "all" || request.creator_name === user) &&
+        (search === "" || request.title.toLowerCase().includes(search))
+      );
+    });
+
+    renderPullRequests(filteredRequests);
+  }
+
+  statusSelect.addEventListener("change", filterPullRequests);
+  userSelect.addEventListener("change", filterPullRequests);
+  searchInput.addEventListener("input", filterPullRequests);
+}
+
+// 初始化拉取请求点击事件
+function initPullRequestListeners() {
+  document.querySelectorAll(".pull-request-item").forEach((item) => {
+    item.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const prId = item.dataset.prId;
+      currentPullRequest = pullRequests.find((pr) => pr.id == prId);
+      await loadPullRequestDetails(currentPullRequest);
+      document.querySelector(".index-box").style.display = "none";
+      document.querySelector(".manager-box").style.display = "block";
+    });
+  });
+}
+
+// 加载拉取请求详情
+async function loadPullRequestDetails(pr) {
+  // 更新头部信息
+  document.querySelector(
+    ".pull-request-title"
+  ).textContent = `${pr.title} (#${pr.id})`;
+  document.querySelector(".pull-request-info").innerHTML = `
+    <span>${pr.source_branch} → ${pr.target_branch}</span>
+    <span>创建人: ${pr.creator_name}</span>
+    <span>创建于: ${new Date(pr.created_at).toISOString().split("T")[0]}</span>
+  `;
+
+  // 初始化分支选择器
+  const sourceSelect = document.querySelector("#source-branch");
+  const targetSelect = document.querySelector("#target-branch");
+  sourceSelect.innerHTML = `<option value="${pr.source_branch}">${pr.source_branch}</option>`;
+  targetSelect.innerHTML = `<option value="${pr.target_branch}">${pr.target_branch}</option>`;
+  sourceSelect.disabled = true;
+  targetSelect.disabled = true;
+
+  // 获取文件差异数据（模拟从后端获取）
+  const files = await fetchFileChanges(pr.id);
+  renderFilesList(files);
+  renderDiffContent(files[0]); // 默认显示第一个文件
+  renderComments(pr.id);
+
+  // 初始化按钮事件
+  initActionButtons(pr);
+}
+
+// 获取文件差异（模拟后端接口）
+async function fetchFileChanges(prId) {
+  // 这里可以替换为实际的 fetch 请求
+  return [
+    {
+      name: "createTables.js",
+      added: 219,
+      removed: 12,
+      diff: [
+        {
+          line: 1,
+          type: "normal",
+          content: "const createTables = async (pool) => {",
+        },
+        {
+          line: 2,
+          type: "normal",
+          content: "const connection = await pool.getConnection();",
+        },
+        { line: 3, type: "normal", content: "try {" },
+        {
+          line: 4,
+          type: "removed",
+          content:
+            "await connection.query(`CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY)`);",
+        },
+        { line: 4, type: "added", content: "await connection.query(`" },
+        {
+          line: 5,
+          type: "added",
+          content: "CREATE TABLE IF NOT EXISTS users (",
+        },
+        {
+          line: 6,
+          type: "added",
+          content: "id INT AUTO_INCREMENT PRIMARY KEY,",
+        },
+        {
+          line: 7,
+          type: "added",
+          content: "email VARCHAR(255) UNIQUE NOT NULL,",
+        },
+        {
+          line: 8,
+          type: "added",
+          content: "avatar_url VARCHAR(255) DEFAULT '../img/头像.jpg',",
+        },
+        {
+          line: 9,
+          type: "added",
+          content: "password_hash VARCHAR(255) NOT NULL,",
+        },
+        {
+          line: 10,
+          type: "added",
+          content: "role ENUM('admin', 'user') DEFAULT 'user',",
+        },
+        { line: 11, type: "added", content: "name VARCHAR(255)," },
+        {
+          line: 12,
+          type: "added",
+          content: "created_at DATETIME DEFAULT CURRENT_TIMESTAMP,",
+        },
+        {
+          line: 13,
+          type: "added",
+          content:
+            "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+        },
+        { line: 14, type: "added", content: ")" },
+        { line: 15, type: "added", content: "`);" },
+        { line: 16, type: "normal", content: "" },
+        { line: 17, type: "normal", content: "// 其他表创建代码..." },
+        { line: 18, type: "normal", content: "} finally {" },
+        { line: 19, type: "normal", content: "connection.release();" },
+        { line: 20, type: "normal", content: "}" },
+        { line: 21, type: "normal", content: "};" },
+      ],
+    },
+    { name: "schema.sql", added: 18, removed: 3, diff: [] },
+    { name: "model.js", added: 8, removed: 2, diff: [] },
+  ];
+}
+
+// 渲染文件列表
+function renderFilesList(files) {
+  const filesList = document.querySelector(".files-list");
+  filesList.innerHTML = `<div class="files-header">已修改文件 (${files.length})</div>`;
+  files.forEach((file) => {
+    const fileItem = document.createElement("div");
+    fileItem.className = `file-item ${
+      file.name === currentFile ? "active" : ""
+    }`;
+    fileItem.dataset.file = file.name;
+    fileItem.innerHTML = `
+      <div>${file.name}</div>
+      <div class="file-changes">
+        <span class="file-added">+${file.added}</span>
+        <span class="file-removed">-${file.removed}</span>
+      </div>
+    `;
+    fileItem.addEventListener("click", () => {
+      currentFile = file.name;
+      filesList
+        .querySelectorAll(".file-item")
+        .forEach((item) => item.classList.remove("active"));
+      fileItem.classList.add("active");
+      renderDiffContent(file);
+    });
+    filesList.appendChild(fileItem);
+  });
+}
+
+// 渲染差异内容
+function renderDiffContent(file) {
+  const diffHeader = document.querySelector(".diff-header div:first-child");
+  const diffContent = document.querySelector(".diff-content");
+  diffHeader.textContent = file.name;
+  diffContent.innerHTML = file.diff
+    .map(
+      (line) => `
+    <div class="diff-line ${
+      line.type === "added"
+        ? "diff-added"
+        : line.type === "removed"
+        ? "diff-removed"
+        : ""
+    }">
+      <div class="line-number">${line.line}</div>
+      <div class="line-content">${line.content}</div>
+    </div>
+  `
+    )
+    .join("");
+}
+
+// 初始化操作按钮（通过/拒绝）
+function initActionButtons(pr) {
+  const rejectBtn = document.querySelector(".buttons .btn:not(.btn-primary)");
+  const mergeBtn = document.querySelector(".buttons .btn.btn-primary");
+
+  rejectBtn.addEventListener("click", async () => {
+    if (confirm("确定要拒绝此拉取请求吗？")) {
+      await handlePullRequest(pr.id, "closed");
+    }
+  });
+
+  mergeBtn.addEventListener("click", async () => {
+    if (confirm("确定要通过并合并此拉取请求吗？")) {
+      await handlePullRequest(pr.id, "merged");
+    }
+  });
+
+  // 禁用按钮如果状态不是 "wait"
+  if (pr.status !== "wait") {
+    rejectBtn.disabled = true;
+    mergeBtn.disabled = true;
+  }
+}
+
+// 处理拉取请求（通过/拒绝）
+async function handlePullRequest(prId, status) {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/project/pulls/${prId}/${
+        status === "merged" ? "merge" : "close"
+      }`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ projectId: currentPullRequest.project_id }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "操作失败");
+    }
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error("操作失败");
+    }
+
+    alert(status === "merged" ? "拉取请求已合并！" : "拉取请求已关闭！");
+    document.querySelector(".index-box").style.display = "block";
+    document.querySelector(".manager-box").style.display = "none";
+    await fetchPullRequests();
+    renderStats();
+  } catch (error) {
+    console.error("处理拉取请求错误:", error);
+    alert(`操作失败：${error.message}`);
+  }
+}
+
+// 返回列表
+document
+  .querySelector(".pull-request-header")
+  .addEventListener("click", (e) => {
+    if (e.target.tagName !== "BUTTON") {
+      document.querySelector(".index-box").style.display = "block";
+      document.querySelector(".manager-box").style.display = "none";
+    }
+  });
+
+// 初始化页面
+document.addEventListener("DOMContentLoaded", initManagerPage);
