@@ -21,7 +21,7 @@ function initFileWorkspace(initialBranchId) {
   const loadBranches = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/files/branches?userId=${userId}&projectId=${projectId}`,
+        `${API_BASE_URL}/files/branches?userId=${userId}&projectId=${projectId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -68,7 +68,7 @@ function initFileWorkspace(initialBranchId) {
   const loadFiles = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/files/files?projectId=${projectId}&branchId=${currentBranchId}`,
+        `${API_BASE_URL}/files/files?projectId=${projectId}&branchId=${currentBranchId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -348,7 +348,7 @@ function initFileWorkspace(initialBranchId) {
 
     const content = contentTextarea.value;
     try {
-      const response = await fetch("http://localhost:3000/files/save", {
+      const response = await fetch(`${API_BASE_URL}/files/save`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -396,7 +396,7 @@ function initFileWorkspace(initialBranchId) {
       if (confirm("确定删除当前文件吗？")) {
         try {
           const response = await fetch(
-            `http://localhost:3000/files/delete/${currentFileId}`,
+            `${API_BASE_URL}/files/delete/${currentFileId}`,
             {
               method: "DELETE",
               headers: {
@@ -424,7 +424,7 @@ function initFileWorkspace(initialBranchId) {
       const description =
         document.querySelector(".edit textarea").value || "提交更新";
       try {
-        const response = await fetch("http://localhost:3000/files/commit", {
+        const response = await fetch(`${API_BASE_URL}/files/commit`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -452,7 +452,7 @@ function initFileWorkspace(initialBranchId) {
   const loadCommits = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/files/commits?projectId=${projectId}&branchId=${currentBranchId}`,
+        `${API_BASE_URL}/files/commits?projectId=${projectId}&branchId=${currentBranchId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -512,7 +512,7 @@ function initFileWorkspace(initialBranchId) {
       const versionId = parseInt(activeItem.dataset.versionId);
       try {
         const response = await fetch(
-          `http://localhost:3000/files/version/${versionId}?projectId=${projectId}&branchId=${currentBranchId}`,
+          `${API_BASE_URL}/files/version/${versionId}?projectId=${projectId}&branchId=${currentBranchId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -566,7 +566,7 @@ generateReportBtn.addEventListener("click", async () => {
     generateReportBtn.style.display = "none";
 
     const response = await fetch(
-      `http://localhost:3000/project/generate-report/${projectId}`,
+      `${API_BASE_URL}/project/generate-report/${projectId}`,
       {
         method: "POST",
         headers: {

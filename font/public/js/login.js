@@ -8,7 +8,7 @@ if (document.getElementById("loginForm")) {
     const password = document.getElementById("password").value;
 
     try {
-      const response = await fetch("http://localhost:3000/log/login", {
+      const response = await fetch(`${API_BASE_URL}/log/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phoneNum, password }),
@@ -47,7 +47,7 @@ if (document.getElementById("registerForm")) {
     sendCodeBtn.textContent = "发送中...";
 
     try {
-      const response = await fetch("http://localhost:3000/log/send-code", {
+      const response = await fetch(`${API_BASE_URL}/log/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
@@ -103,7 +103,7 @@ if (document.getElementById("registerForm")) {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/log/register", {
+      const response = await fetch(`${API_BASE_URL}/log/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firstName, lastName, phone, code, password }),
@@ -139,7 +139,7 @@ if (document.getElementById("resetForm")) {
     sendResetCodeBtn.textContent = "发送中...";
 
     try {
-      const response = await fetch("http://localhost:3000/log/send-code", {
+      const response = await fetch(`${API_BASE_URL}/log/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone }),
@@ -195,7 +195,7 @@ if (document.getElementById("resetForm")) {
     }
 
     try {
-      const response = await fetch("http://localhost:3000/log/reset-password", {
+      const response = await fetch(`${API_BASE_URL}/log/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, code, password }),
@@ -220,7 +220,7 @@ async function getProfile() {
     return;
   }
   try {
-    const response = await fetch("http://localhost:3000/profile", {
+    const response = await fetch(`${API_BASE_URL}/profile`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

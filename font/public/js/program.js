@@ -24,7 +24,7 @@ function initTasks() {
   // 获取数据
   Promise.all([
     // 用户角色
-    fetch(`http://localhost:3000/project/members/${projectId}/role`, {
+    fetch(`${API_BASE_URL}/project/members/${projectId}/role`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -45,7 +45,7 @@ function initTasks() {
         return null;
       }),
     // 任务
-    fetch(`http://localhost:3000/program/${projectId}`, {
+    fetch(`${API_BASE_URL}/program/${projectId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -67,7 +67,7 @@ function initTasks() {
         return null;
       }),
     // 小组
-    fetch(`http://localhost:3000/program/groups/${projectId}`, {
+    fetch(`${API_BASE_URL}/program/groups/${projectId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -89,7 +89,7 @@ function initTasks() {
         return null;
       }),
     // 成员
-    fetch(`http://localhost:3000/project/members/${projectId}`, {
+    fetch(`${API_BASE_URL}/project/members/${projectId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -472,7 +472,7 @@ async function updateTaskStatus(taskId, newStatus) {
 
   try {
     const response = await fetch(
-      `http://localhost:3000/program/${taskId}/status?projectId=${projectId}`,
+      `${API_BASE_URL}/program/${taskId}/status?projectId=${projectId}`,
       {
         method: "PATCH",
         headers: {
@@ -489,16 +489,13 @@ async function updateTaskStatus(taskId, newStatus) {
     }
 
     // 重新加载任务
-    const taskResponse = await fetch(
-      `http://localhost:3000/program/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const taskResponse = await fetch(`${API_BASE_URL}/program/${projectId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+    });
     const taskData = await taskResponse.json();
     if (taskData.success) {
       tasks = taskData.tasks || [];
@@ -516,7 +513,7 @@ async function deleteTask(taskId) {
 
   try {
     const response = await fetch(
-      `http://localhost:3000/program/${projectId}/${taskId}`,
+      `${API_BASE_URL}/program/${projectId}/${taskId}`,
       {
         method: "DELETE",
         headers: {
@@ -532,16 +529,13 @@ async function deleteTask(taskId) {
     }
 
     // 重新加载任务
-    const taskResponse = await fetch(
-      `http://localhost:3000/program/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const taskResponse = await fetch(`${API_BASE_URL}/program/${projectId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+    });
     const taskData = await taskResponse.json();
     if (taskData.success) {
       tasks = taskData.tasks || [];

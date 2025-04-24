@@ -211,7 +211,7 @@ function init() {
   console.log("项目ID:", projectId);
   console.log("用户ID:", userId);
 
-  fetch(`http://localhost:3000/project/init/${projectId}`, {
+  fetch(`${API_BASE_URL}/project/init/${projectId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -394,7 +394,7 @@ function initWorkSpace() {
 async function fetchBranches() {
   try {
     const response = await fetch(
-      `http://localhost:3000/project/branches/${projectId}`,
+      `${API_BASE_URL}/project/branches/${projectId}`,
       {
         method: "GET",
         headers: {
@@ -429,7 +429,7 @@ function initPullRequests() {
   }
 
   // 获取拉取请求数据
-  fetch(`http://localhost:3000/project/pulls/${projectId}`, {
+  fetch(`${API_BASE_URL}/project/pulls/${projectId}`, {
     method: "GET",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -463,7 +463,7 @@ function initPullRequests() {
 
   // 获取分支和成员数据
   Promise.all([
-    fetch(`http://localhost:3000/project/branches/${projectId}`, {
+    fetch(`${API_BASE_URL}/project/branches/${projectId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -482,7 +482,7 @@ function initPullRequests() {
         }
         branches = data.branches || [];
       }),
-    fetch(`http://localhost:3000/project/members/${projectId}`, {
+    fetch(`${API_BASE_URL}/project/members/${projectId}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -988,21 +988,18 @@ async function submitPullRequest(
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:3000/project/branches/create`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            projectId,
-            baseBranchId: sourceBranchId,
-            newBranchName,
-          }),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/project/branches/create`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId,
+          baseBranchId: sourceBranchId,
+          newBranchName,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -1054,7 +1051,7 @@ async function submitPullRequest(
   };
 
   try {
-    const response = await fetch(`http://localhost:3000/project/pulls/create`, {
+    const response = await fetch(`${API_BASE_URL}/project/pulls/create`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -1078,7 +1075,7 @@ async function submitPullRequest(
     if (isNewBlankBranch) {
       try {
         const mergeResponse = await fetch(
-          `http://localhost:3000/project/pulls/${pullRequestId}/merge`,
+          `${API_BASE_URL}/project/pulls/${pullRequestId}/merge`,
           {
             method: "POST",
             headers: {
@@ -1247,16 +1244,13 @@ async function fetchPullRequestsForManagerPage() {
       throw new Error("未登录，请先登录");
     }
 
-    const response = await fetch(
-      `http://localhost:3000/project/pulls/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/project/pulls/${projectId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -1436,7 +1430,7 @@ async function fetchFileChangesForManagerPage(prId) {
     }
 
     const response = await fetch(
-      `http://localhost:3000/project/${projectId}/pulls/${prId}/diff`,
+      `${API_BASE_URL}/project/${projectId}/pulls/${prId}/diff`,
       {
         method: "GET",
         headers: {
@@ -1557,7 +1551,7 @@ function initActionButtonsForManagerPage(pr) {
 async function handlePullRequestForManagerPage(prId, status) {
   try {
     const response = await fetch(
-      `http://localhost:3000/project/pulls/${prId}/${
+      `${API_BASE_URL}/project/pulls/${prId}/${
         status === "merged" ? "merge" : "close"
       }`,
       {
@@ -1668,16 +1662,13 @@ let allUsers = [];
 
 async function initProject() {
   try {
-    const response = await fetch(
-      `http://localhost:3000/project/init/${projectId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/project/init/${projectId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
 
     if (!response.ok) {
       throw new Error(`获取项目详情失败，状态码: ${response.status}`);
@@ -1726,7 +1717,7 @@ async function initProject() {
 async function fetchUsersAndMembersForSetPage() {
   try {
     const response = await fetch(
-      `http://localhost:3000/project/users-and-members/${projectId}`,
+      `${API_BASE_URL}/project/users-and-members/${projectId}`,
       {
         method: "GET",
         headers: {
@@ -1955,7 +1946,7 @@ document
 
     try {
       const response = await fetch(
-        `http://localhost:3000/project/update-project/${projectId}`,
+        `${API_BASE_URL}/project/update-project/${projectId}`,
         {
           method: "PUT",
           headers: {
@@ -2023,7 +2014,7 @@ document
   ?.addEventListener("click", async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/project/delete-project/${projectId}`,
+        `${API_BASE_URL}/project/delete-project/${projectId}`,
         {
           method: "DELETE",
           headers: {
@@ -2040,7 +2031,7 @@ document
       const result = await response.json();
       if (result.success) {
         alert("项目删除成功");
-        window.location.href = `http://127.0.0.1:5500/font/public/html/index.html?id=${userId}`;
+        window.location.href = `${LocalAPI}/font/public/html/index.html?id=${userId}`;
       } else {
         alert("删除项目失败：" + result.error);
       }

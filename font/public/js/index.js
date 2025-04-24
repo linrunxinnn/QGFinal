@@ -8,7 +8,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const SelfId = urlParams.get("id");
 //获取头像
 function getSelftImg(id) {
-  return fetch(`http://localhost:3000/user/getSelfImg?id=${id}`, {
+  return fetch(`${API_BASE_URL}/user/getSelfImg?id=${id}`, {
     headers: {
       Authorization: `Bearer ${token}`, // 确保 token 已定义
       "Content-Type": "application/json",
@@ -40,7 +40,7 @@ getSelftImg(SelfId)
   });
 //获取名字
 function getSelfName(id) {
-  return fetch(`http://localhost:3000/user/getSelfName?id=${id}`, {
+  return fetch(`${API_BASE_URL}/user/getSelfName?id=${id}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -63,7 +63,7 @@ getSelfName(SelfId)
   });
 
 //socket.io 初始化
-const socket = io("http://localhost:3000", {
+const socket = io(`${API_BASE_URL}`, {
   query: { userId: getQueryParam("id") },
 });
 
@@ -154,7 +154,7 @@ friendSearchInput.addEventListener(
 
     try {
       const response = await fetch(
-        `http://localhost:3000/user/search?account=${account}`,
+        `${API_BASE_URL}/user/search?account=${account}`,
         {
           method: "GET",
           headers: {
@@ -199,7 +199,7 @@ friendSearchInput.addEventListener(
         item.querySelector(".add-icon").addEventListener("click", async (e) => {
           const userId = item.querySelector(".icon").dataset.userId;
           try {
-            const response = await fetch(`http://localhost:3000/user/add`, {
+            const response = await fetch(`${API_BASE_URL}/user/add`, {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -251,7 +251,7 @@ nameSubmit.addEventListener("click", async () => {
   userId = SelfId;
 
   try {
-    const response = await fetch("http://localhost:3000/user/update", {
+    const response = await fetch(`${API_BASE_URL}/user/update`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -297,7 +297,7 @@ nameSubmit.addEventListener("click", async () => {
 //   }
 
 //   try {
-//     const response = await fetch("http://localhost:3000/user/update", {
+//     const response = await fetch(`${API_BASE_URL}/user/update`, {
 //       method: "POST",
 //       headers: {
 //         Authorization: `Bearer ${token}`,
@@ -353,7 +353,7 @@ fileInput.addEventListener("change", async (e) => {
   formData.append("userId", SelfId);
 
   try {
-    const response = await fetch("http://localhost:3000/user/uploadAvatar", {
+    const response = await fetch(`${API_BASE_URL}/user/uploadAvatar`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -404,7 +404,7 @@ document.querySelector(".overlay").addEventListener("click", () => {
   const token = localStorage.getItem("token");
   const userId = SelfId;
 
-  fetch(`http://localhost:3000/user/initialize/messageList?id=${userId}`, {
+  fetch(`${API_BASE_URL}/user/initialize/messageList?id=${userId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
@@ -495,7 +495,7 @@ document
         ".main .main-contain > [data-box='message'] > .left > .message-list .item.active .img-box img"
       ).src;
     fetch(
-      `http://localhost:3000/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
+      `${API_BASE_URL}/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -566,17 +566,14 @@ document
 
           pendingIcon.addEventListener("click", async () => {
             try {
-              const response = await fetch(
-                `http://localhost:3000/user/accept`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({ friendId: id, userId: userId }),
-                }
-              );
+              const response = await fetch(`${API_BASE_URL}/user/accept`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ friendId: id, userId: userId }),
+              });
 
               if (!response.ok) {
                 const errorData = await response.json();
@@ -591,7 +588,7 @@ document
 
                 // 刷新聊天记录
                 const refreshResponse = await fetch(
-                  `http://localhost:3000/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
+                  `${API_BASE_URL}/user/initialize/rightBox?userid=${userId}&friendid=${id}`,
                   {
                     headers: {
                       Authorization: `Bearer ${token}`,
@@ -728,7 +725,7 @@ sendTextArea.addEventListener("keydown", (e) => {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
     }
-    fetch("http://localhost:3000/user/send-message", {
+    fetch(`${API_BASE_URL}/user/send-message`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -763,8 +760,8 @@ function setProgress(percent) {
 //获取项目列表
 function getProjectList(statusFilter = "") {
   const url = statusFilter
-    ? `http://localhost:3000/user/initialize/projectList?id=${SelfId}&status=${statusFilter}`
-    : `http://localhost:3000/user/initialize/projectList?id=${SelfId}`;
+    ? `${API_BASE_URL}/user/initialize/projectList?id=${SelfId}&status=${statusFilter}`
+    : `${API_BASE_URL}/user/initialize/projectList?id=${SelfId}`;
 
   fetch(url, {
     headers: {
@@ -880,16 +877,13 @@ const createProjectButton = document.querySelector(
 //获取好友信息
 async function fetchFriends() {
   try {
-    const response = await fetch(
-      `http://localhost:3000/user/friends/${SelfId}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}/user/friends/${SelfId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
     if (response.ok) {
       return await response.json();
     } else {
@@ -1035,7 +1029,7 @@ createProjectButton.addEventListener("click", async () => {
         return;
       }
 
-      const response = await fetch("http://localhost:3000/project/create", {
+      const response = await fetch(`${API_BASE_URL}/project/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1081,7 +1075,7 @@ createProjectButton.addEventListener("click", async () => {
 //项目成功创建后跳转到项目详情页
 function redirectToProjectDetail(projectId) {
   const newWindow = window.open("", "_blank");
-  newWindow.location.href = `http://127.0.0.1:5500/font/public/html/item.html?id=${projectId}&userId=${SelfId}`;
+  newWindow.location.href = `${LocalAPI}/font/public/html/item.html?id=${projectId}&userId=${SelfId}`;
 }
 
 //工作台的小卡片点击后跳转到对应的项目详情页
@@ -1090,13 +1084,34 @@ function redirectToProjectDetail(projectId) {
     ".main .main-contain > [data-box='work'] > .project"
   );
 
-  workContainer.addEventListener("click", (event) => {
+  workContainer.addEventListener("click", async (event) => {
     const item = event.target.closest(".project-box .item");
     if (!item) return;
 
     event.preventDefault();
     console.log("点击了项目卡片:", item);
     const id = item.dataset.id;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/project/updateprojectStatus/${id}`,
+        {
+          method: "post",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("更新项目状态失败");
+      }
+
+      console.log("项目更新为doing");
+    } catch (error) {
+      console.error(error);
+    }
+
     redirectToProjectDetail(id);
   });
 })();

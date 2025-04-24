@@ -646,6 +646,32 @@ router.get("/pulls/all", checkAdmin, async (req, res) => {
   }
 });
 
+//更新项目状态为doing
+router.post("/updateprojectStatus/:projectId", async (req, res) => {
+  const projectId = req.params.projectId;
+
+  try {
+    const db = await getDb();
+
+    // 更新项目状态
+    const query = `
+      UPDATE projects 
+      SET status = 'doing' 
+      WHERE id = ?
+    `;
+    const [result] = await db.query(query, [projectId]);
+
+    if (result.affectedRows === 1) {
+      res.status(200).json({ message: "项目状态更新成功" });
+    } else {
+      res.status(404).json({ message: "项目未找到或状态未更改" });
+    }
+  } catch (error) {
+    console.error("更新项目状态失败:", error);
+    res.status(500).json({ message: "服务器错误" });
+  }
+});
+
 // 创建拉取请求
 router.post("/pulls/create", checkProjectMembership, async (req, res) => {
   const {
