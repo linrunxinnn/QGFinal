@@ -3,6 +3,7 @@ const router = express.Router();
 const dbPromise = require("../config/db");
 const { generateToken } = require("../middleware/auth");
 const { generateProjectReport } = require("../routes/projectReportGenerator");
+const Diff = require("diff");
 
 const codes = {};
 
@@ -14,7 +15,6 @@ async function getDb() {
 async function checkProjectMembership(req, res, next) {
   const userId = req.user.id;
   const projectId = req.params.projectId || req.body.projectId;
-
   if (!projectId || isNaN(parseInt(projectId, 10))) {
     return res.status(400).json({ success: false, error: "无效的项目ID" });
   }
@@ -1444,4 +1444,161 @@ router.post("/pulls/:id/close", async (req, res) => {
     res.status(500).json({ success: false, error: "服务器错误" });
   }
 });
+
+// 获取拉取请求的文件差异
+router.get(
+  "/:projectId/pulls/:prId/diff",
+  checkProjectMembership,
+  async (req, res) => {
+    const { prId } = req.params;
+    const db = await getDb();
+
+    try {
+      // Step 1: 获取拉取请求的源分支和目标分支
+      const [mergeRequests] = await db.query(
+        `
+      SELECT source_branch_id, target_branch_id
+      FROM pull_requests
+      WHERE id = ?
+    `,
+        [prId]
+      );
+
+      if (!mergeRequests.length) {
+        return res
+          .status(404)
+          .json({ success: false, error: "拉取请求不存在" });
+      }
+
+      const { source_branch_id, target_branch_id } = mergeRequests[0];
+
+      // Step 2: 获取源分支和目标分支的文件
+      const [sourceFiles] = await db.query(
+        `
+      SELECT id, name, type, parent_id, content
+      FROM files
+      WHERE branch_id = ?
+    `,
+        [source_branch_id]
+      );
+
+      const [targetFiles] = await db.query(
+        `
+      SELECT id, name, type, parent_id, content
+      FROM files
+      WHERE branch_id = ?
+    `,
+        [target_branch_id]
+      );
+
+      // Step 3: 比较文件差异
+      const diff = computeFileDiff(sourceFiles, targetFiles);
+
+      res.json({ success: true, diff });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ success: false, error: "获取文件差异失败" });
+    }
+  }
+);
+
+// 计算文件差异（使用 diff 库）
+function computeFileDiff(sourceFiles, targetFiles) {
+  const diff = [];
+
+  // 将文件按 name 组织，便于比较
+  const sourceMap = new Map(sourceFiles.map((file) => [file.name, file]));
+  const targetMap = new Map(targetFiles.map((file) => [file.name, file]));
+
+  // 遍历源分支文件，检查新增和修改
+  for (const sourceFile of sourceFiles) {
+    if (sourceFile.type !== "file") continue; // 跳过文件夹
+
+    const targetFile = targetMap.get(sourceFile.name);
+    if (!targetFile) {
+      // 文件在目标分支中不存在，表示新增
+      const lines = (sourceFile.content || "").split("\n");
+      diff.push({
+        name: sourceFile.name,
+        type: "added",
+        added: lines.length,
+        removed: 0,
+        diff: lines.map((line, i) => ({
+          type: "added",
+          line: i + 1,
+          content: line,
+        })),
+      });
+    } else if (sourceFile.content !== targetFile.content) {
+      // 文件存在但内容不同，表示修改
+      const changes = compareLines(
+        targetFile.content || "",
+        sourceFile.content || ""
+      );
+      const added = changes.filter((c) => c.type === "added").length;
+      const removed = changes.filter((c) => c.type === "removed").length;
+      diff.push({
+        name: sourceFile.name,
+        type: "modified",
+        added,
+        removed,
+        diff: changes,
+      });
+    }
+  }
+
+  // 遍历目标分支文件，检查删除
+  for (const targetFile of targetFiles) {
+    if (targetFile.type !== "file") continue; // 跳过文件夹
+
+    if (!sourceMap.has(targetFile.name)) {
+      // 文件在源分支中不存在，表示删除
+      const lines = (targetFile.content || "").split("\n");
+      diff.push({
+        name: targetFile.name,
+        type: "removed",
+        added: 0,
+        removed: lines.length,
+        diff: lines.map((line, i) => ({
+          type: "removed",
+          line: i + 1,
+          content: line,
+        })),
+      });
+    }
+  }
+
+  return diff;
+}
+
+// 使用 diff 库比较文件内容
+function compareLines(oldContent, newContent) {
+  const changes = [];
+  const diff = Diff.diffLines(oldContent, newContent, { newlineIsToken: true });
+  let oldLineNumber = 1;
+  let newLineNumber = 1;
+
+  diff.forEach((part) => {
+    const lines = part.value.split("\n").filter((line) => line !== "");
+    if (part.added) {
+      lines.forEach((line) => {
+        changes.push({ type: "added", line: newLineNumber++, content: line });
+        oldLineNumber++; // 保持行号同步
+      });
+    } else if (part.removed) {
+      lines.forEach((line) => {
+        changes.push({ type: "removed", line: oldLineNumber++, content: line });
+        newLineNumber++; // 保持行号同步
+      });
+    } else {
+      lines.forEach((line) => {
+        changes.push({ type: "normal", line: oldLineNumber++, content: line });
+        newLineNumber++;
+      });
+    }
+  });
+
+  return changes;
+}
+
 module.exports = router;

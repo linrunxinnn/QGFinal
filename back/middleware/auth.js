@@ -26,6 +26,7 @@ function authenticateToken(req, res, next) {
       // return res.status(403).json({ message: "无效的令牌" });
       return sendAuthRedirect(res);
     }
+    console.log("Decoded user:", user); // 调试日志
     req.user = user;
     next();
   });
