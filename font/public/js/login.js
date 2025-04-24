@@ -4,14 +4,14 @@ if (document.getElementById("loginForm")) {
     const loginButton = document.getElementById("loginButton");
     loginButton.disabled = true;
     loginButton.textContent = "登录中...";
-    const phoneNum = document.getElementById("phoneNum").value;
+    const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
       const response = await fetch(`${API_BASE_URL}/log/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phoneNum, password }),
+        body: JSON.stringify({ email, password }),
       });
       const result = await response.json();
       if (result.success) {
@@ -37,8 +37,8 @@ if (document.getElementById("registerForm")) {
   let timer = null;
 
   sendCodeBtn.addEventListener("click", async () => {
-    const phone = document.getElementById("phone").value;
-    if (!phone) {
+    const email = document.getElementById("email").value;
+    if (!email) {
       alert("请输入电话号码");
       return;
     }
@@ -50,7 +50,7 @@ if (document.getElementById("registerForm")) {
       const response = await fetch(`${API_BASE_URL}/log/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ email }),
       });
       const result = await response.json();
 
@@ -90,7 +90,7 @@ if (document.getElementById("registerForm")) {
 
     const firstName = document.getElementById("firstName").value;
     const lastName = document.getElementById("lastName").value;
-    const phone = document.getElementById("phone").value;
+    const email = document.getElementById("email").value;
     const code = document.getElementById("code").value;
     const password = document.getElementById("newPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
@@ -106,7 +106,7 @@ if (document.getElementById("registerForm")) {
       const response = await fetch(`${API_BASE_URL}/log/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, phone, code, password }),
+        body: JSON.stringify({ firstName, lastName, email, code, password }),
       });
       const result = await response.json();
       alert(result.message);
@@ -129,8 +129,8 @@ if (document.getElementById("resetForm")) {
   let timer = null;
 
   sendResetCodeBtn.addEventListener("click", async () => {
-    const phone = document.getElementById("resetPhone").value;
-    if (!phone) {
+    const email = document.getElementById("resetEmail").value;
+    if (!email) {
       alert("请输入电话号码");
       return;
     }
@@ -142,7 +142,7 @@ if (document.getElementById("resetForm")) {
       const response = await fetch(`${API_BASE_URL}/log/send-code`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ email }),
       });
       const result = await response.json();
 
@@ -180,7 +180,7 @@ if (document.getElementById("resetForm")) {
     submitButton.disabled = true;
     submitButton.textContent = "重置中...";
 
-    const phone = document.getElementById("resetPhone").value;
+    const email = document.getElementById("resetEmail").value;
     const code = document.getElementById("resetCode").value;
     const password = document.getElementById("newResetPassword").value;
     const confirmPassword = document.getElementById(
@@ -198,7 +198,7 @@ if (document.getElementById("resetForm")) {
       const response = await fetch(`${API_BASE_URL}/log/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, code, password }),
+        body: JSON.stringify({ email, code, password }),
       });
       const result = await response.json();
       alert(result.message);

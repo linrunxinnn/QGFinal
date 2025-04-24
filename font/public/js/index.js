@@ -270,6 +270,7 @@ nameSubmit.addEventListener("click", async () => {
       alert("用户名修改成功");
       document.querySelector(".head .name").textContent = newName;
       personInfo.style.display = "none";
+      document.querySelector(".overlay").style.display = "none";
     }
   } catch (error) {
     console.error("修改用户名出错:", error);
