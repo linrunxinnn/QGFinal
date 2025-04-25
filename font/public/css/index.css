@@ -280,7 +280,8 @@ nav .nav-list .item .icon {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 400px;
+  /* max-width: 400px; */
+  min-width: 200px;
 }
 
 .main-contain [data-box="message"] .left > .head {
@@ -386,6 +387,7 @@ nav .nav-list .item .icon {
 
 .main-contain [data-box="message"] .right {
   padding: 10px 15px;
+  flex: 1;
 }
 
 .main-contain [data-box="message"] .right .head {

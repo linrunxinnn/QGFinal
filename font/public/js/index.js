@@ -850,13 +850,11 @@ function getProjectList(statusFilter = "") {
 function initialProjectList() {
   getProjectList();
 
-  // 添加选项卡切换事件监听
   document.querySelectorAll(".project .data [data-data]").forEach((item) => {
     item.addEventListener("click", () => {
       const status = item.dataset.data;
       getProjectList(status === "all" ? "" : status);
 
-      // 更新活动选项卡样式和显示对应容器
       document.querySelectorAll(".project .data [data-data]").forEach((x) => {
         x.classList.toggle("active", x.dataset.data === status);
       });
@@ -938,7 +936,6 @@ createProjectButton.addEventListener("click", async () => {
   renderFriendList(managerList, friends);
   renderFriendList(groupList, friends);
 
-  //创建任务
   //tag-list中的标签点击后则添加到input-tag；input-tag中的标签点击后则删除
   const tagList = document.querySelector(
     ".add-project > .message-box .tag-list"

@@ -53,28 +53,6 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// // 发送验证码（模拟）
-// router.post("/send-code", async (req, res) => {
-//   const { phone } = req.body;
-//   const code = Math.floor(100000 + Math.random() * 900000).toString(); // 随机6位验证码
-//   codes[phone] = code;
-//   console.log(`验证码发送至 ${phone}: ${code}`); // 模拟发送，实际需集成短信服务
-
-//   // 发送验证邮件
-//   const mailOptions = {
-//     from: '"网站名称" <your-qq-email@qq.com>',
-//     to: email,
-//     subject: "邮箱验证码",
-//     html: `
-//       <h1>欢迎注册我们的网站</h1>
-//       <p>您的验证码是: <strong>${verificationCode}</strong></p>
-//       <p>此验证码30分钟内有效。</p>
-//     `,
-//   };
-
-//   await transporter.sendMail(mailOptions);
-//   res.json({ success: true, message: "验证码已发送" });
-// });
 // 发送验证码
 router.post("/send-code", async (req, res) => {
   const { email } = req.body; // 改为接收 email
@@ -87,7 +65,7 @@ router.post("/send-code", async (req, res) => {
 
   codes[email] = { code, expiresAt }; // 存储验证码和过期时间
 
-  console.log(`验证码发送至 ${email}: ${code}`); // 模拟发送，实际需集成短信服务
+  // console.log(`验证码发送至 ${email}: ${code}`); // 模拟发送，实际需集成短信服务
 
   try {
     const mailOptions = {
@@ -138,7 +116,7 @@ router.post("/register", async (req, res) => {
     const name = `${firstName} ${lastName}`;
     const [userResult] = await connection.query(
       "INSERT INTO users (email, password_hash, name) VALUES (?, ?, ?)",
-      [email, password, name] // 实际应用中应对密码进行哈希处理
+      [email, password, name]
     );
     const newUserId = userResult.insertId;
     console.log("新用户注册，userId:", newUserId);
@@ -205,7 +183,7 @@ router.post("/reset-password", async (req, res) => {
     // 更新密码
     await connection.query(
       "UPDATE users SET password_hash = ? WHERE email = ?",
-      [password, email] // 实际应用中应对密码进行哈希处理
+      [password, email]
     );
 
     delete codes[email];

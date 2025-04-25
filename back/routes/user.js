@@ -235,7 +235,7 @@ router.get("/initialize/projectList", async (req, res) => {
     const userId = req.user.id;
     const statusFilter = req.query.status;
 
-    console.log(`用户 ID: ${userId}, 筛选状态: ${statusFilter}`);
+    // console.log(`用户 ID: ${userId}, 筛选状态: ${statusFilter}`);
 
     let query = `SELECT DISTINCT p.id AS project_id, p.name AS project_name, p.description, 
                         p.created_at, p.progress, p.status
@@ -481,10 +481,12 @@ router.post("/update", async (req, res) => {
     if (name) {
       query = "UPDATE users SET name = ? WHERE id = ?";
       params = [name, userId];
-    } else if (email) {
-      query = "UPDATE users SET email = ? WHERE id = ?";
-      params = [email, userId];
-    } else {
+    }
+    // else if (email) {
+    //   query = "UPDATE users SET email = ? WHERE id = ?";
+    //   params = [email, userId];
+    // }
+    else {
       return res
         .status(400)
         .json({ success: false, error: "未提供要更新的字段" });

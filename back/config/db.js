@@ -49,10 +49,8 @@ const createTables = async (pool) => {
       CREATE TABLE IF NOT EXISTS projects (
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
-      description TEXT,
       progress INT DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
       status ENUM('wait', 'doing', 'over') DEFAULT 'wait',
-      progress int default 0 CHECK (progress >= 0 AND progress <= 100),
       description TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP

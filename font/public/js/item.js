@@ -191,9 +191,22 @@ function renderBranchDetails(itemBox, project, branchId) {
     item.addEventListener("click", (e) => {
       if (e.target.classList.contains("toggle")) return;
       const fileId = item.getAttribute("data-file-id");
-      console.log(
-        `跳转到工作区，项目ID: ${project.id}, 分支ID: ${branchId}, 文件ID: ${fileId}`
-      );
+      //跳转到工作区
+      document
+        .querySelectorAll("nav > .nav-list .item")
+        .forEach((i) => i.classList.remove("active"));
+      document
+        .querySelector(".nav-list > .item[data-box='work']")
+        .classList.add("active");
+      document
+        .querySelectorAll(".main > .main-contain > .item")
+        .forEach((box) => {
+          box.style.display = "none";
+          if (box.dataset.box === "work") {
+            box.style.display = "flex";
+            initWorkSpace(fileId, branchId);
+          }
+        });
     });
   });
 }
@@ -208,8 +221,8 @@ function init() {
     return;
   }
 
-  console.log("项目ID:", projectId);
-  console.log("用户ID:", userId);
+  // console.log("项目ID:", projectId);
+  // console.log("用户ID:", userId);
 
   fetch(`${API_BASE_URL}/project/init/${projectId}`, {
     method: "GET",
@@ -1424,7 +1437,7 @@ function initPullRequestListenersForManagerPage() {
 async function fetchFileChangesForManagerPage(prId) {
   try {
     const token = localStorage.getItem("token");
-    console.log("Token used for request:", token); // 调试日志
+    // console.log("Token used for request:", token); // 调试日志
     if (!token) {
       throw new Error("未登录，请先登录");
     }

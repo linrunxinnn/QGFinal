@@ -524,61 +524,6 @@ router.get("/pulls/:projectId", checkProjectMembership, async (req, res) => {
 });
 
 // 获取所有拉取请求（管理员权限）
-// router.get("/pulls/all", checkAdmin, async (req, res) => {
-//   try {
-//     const db = await getDb();
-
-//     const [pulls] = await db.query(
-//       `SELECT pr.id, pr.project_id, pr.title, pr.description, pr.source_branch_id, pr.target_branch_id,
-//               pr.creator_id, pr.status, pr.deadline, pr.created_at,
-//               u.name AS creator_name, u.avatar_url AS creator_avatar,
-//               sb.name AS source_branch_name, tb.name AS target_branch_name,
-//               p.name AS project_name
-//        FROM pull_requests pr
-//        JOIN users u ON pr.creator_id = u.id
-//        JOIN branches sb ON pr.source_branch_id = sb.id
-//        JOIN branches tb ON pr.target_branch_id = tb.id
-//        JOIN projects p ON pr.project_id = p.id`
-//     );
-
-//     if (pulls.length === 0) {
-//       return res.json({ success: true, pullRequests: [] });
-//     }
-
-//     const pullIds = pulls.map((p) => p.id);
-//     const [pullTags] = await db.query(
-//       `SELECT prt.pull_request_id, t.name
-//        FROM pull_request_tags prt
-//        JOIN tags t ON prt.tag_id = t.id
-//        WHERE prt.pull_request_id IN (?)`,
-//       [pullIds]
-//     );
-
-//     const pullRequests = pulls.map((pull) => ({
-//       id: pull.id,
-//       project_id: pull.project_id,
-//       project_name: pull.project_name,
-//       title: pull.title,
-//       description: pull.description,
-//       source_branch: pull.source_branch_name,
-//       target_branch: pull.target_branch_name,
-//       creator_id: pull.creator_id,
-//       creator_name: pull.creator_name,
-//       creator_avatar: pull.creator_avatar,
-//       status: pull.status,
-//       deadline: pull.deadline,
-//       created_at: pull.created_at,
-//       tags: pullTags
-//         .filter((pt) => pt.pull_request_id === pull.id)
-//         .map((t) => t.name), // 只返回标签名称
-//     }));
-
-//     res.json({ success: true, pullRequests });
-//   } catch (error) {
-//     console.error("获取所有拉取请求失败:", error);
-//     res.status(500).json({ success: false, error: "服务器错误" });
-//   }
-// });
 router.get("/pulls/all", checkAdmin, async (req, res) => {
   const projectId = req.query.projectId; // 从查询参数获取项目ID
 
@@ -1249,8 +1194,8 @@ router.get(
       const sourceBranchName = sourceBranch[0].name;
       const targetBranchName = targetBranch[0].name;
 
-      // 假设你的 Git 仓库路径
-      const repoPath = `/path/to/repo`;
+      // // 假设你的 Git 仓库路径
+      // const repoPath = `/path/to/repo`;
       const { stdout: diff } = await execPromise(
         `git diff ${targetBranchName} ${sourceBranchName}`,
         { cwd: repoPath }
@@ -1347,15 +1292,79 @@ router.patch(
 );
 
 // 合并拉取请求
+// router.post("/pulls/:id/merge", async (req, res) => {
+//   const pullRequestId = req.params.id;
+
+//   try {
+//     const db = await getDb();
+
+//     // 查询 pull_requests 表，获取 projectId
+//     const [pullRequest] = await db.query(
+//       "SELECT project_id FROM pull_requests WHERE id = ?",
+//       [pullRequestId]
+//     );
+
+//     if (!pullRequest.length) {
+//       return res.status(404).json({ success: false, error: "拉取请求不存在" });
+//     }
+
+//     const projectId = pullRequest[0].project_id;
+
+//     // 手动设置 projectId 到 req.body，以便 checkProjectMembership 使用
+//     req.body.projectId = projectId;
+
+//     // 调用 checkProjectMembership 中间件
+//     await new Promise((resolve, reject) => {
+//       checkProjectMembership(req, res, (err) => {
+//         if (err) return reject(err);
+//         resolve();
+//       });
+//     });
+
+//     // 继续合并逻辑
+//     await db.query("START TRANSACTION");
+
+//     const [pullRequestData] = await db.query(
+//       "SELECT pr.* FROM pull_requests pr WHERE pr.id = ?",
+//       [pullRequestId]
+//     );
+
+//     if (!pullRequestData.length) {
+//       await db.query("ROLLBACK");
+//       return res.status(404).json({ success: false, error: "拉取请求不存在" });
+//     }
+
+//     const pr = pullRequestData[0];
+//     if (pr.status !== "approved") {
+//       await db.query("ROLLBACK");
+//       return res
+//         .status(400)
+//         .json({ success: false, error: "拉取请求未被批准，无法合并" });
+//     }
+
+//     await db.query("UPDATE pull_requests SET status = 'merged' WHERE id = ?", [
+//       pullRequestId,
+//     ]);
+
+//     await db.query("COMMIT");
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error("合并拉取请求失败:", error);
+//     const db = await getDb();
+//     await db.query("ROLLBACK");
+//     res.status(500).json({ success: false, error: "服务器错误" });
+//   }
+// });
+// 合并拉取请求
 router.post("/pulls/:id/merge", async (req, res) => {
   const pullRequestId = req.params.id;
 
   try {
     const db = await getDb();
 
-    // 查询 pull_requests 表，获取 projectId
+    // 查询 pull_requests 表，获取相关信息
     const [pullRequest] = await db.query(
-      "SELECT project_id FROM pull_requests WHERE id = ?",
+      "SELECT project_id, source_branch_id, target_branch_id, creator_id FROM pull_requests WHERE id = ?",
       [pullRequestId]
     );
 
@@ -1364,6 +1373,9 @@ router.post("/pulls/:id/merge", async (req, res) => {
     }
 
     const projectId = pullRequest[0].project_id;
+    const sourceBranchId = pullRequest[0].source_branch_id;
+    const targetBranchId = pullRequest[0].target_branch_id;
+    const creatorId = pullRequest[0].creator_id;
 
     // 手动设置 projectId 到 req.body，以便 checkProjectMembership 使用
     req.body.projectId = projectId;
@@ -1376,11 +1388,12 @@ router.post("/pulls/:id/merge", async (req, res) => {
       });
     });
 
-    // 继续合并逻辑
+    // 开始事务处理
     await db.query("START TRANSACTION");
 
+    // 获取拉取请求的详细信息
     const [pullRequestData] = await db.query(
-      "SELECT pr.* FROM pull_requests pr WHERE pr.id = ?",
+      "SELECT * FROM pull_requests WHERE id = ?",
       [pullRequestId]
     );
 
@@ -1390,26 +1403,198 @@ router.post("/pulls/:id/merge", async (req, res) => {
     }
 
     const pr = pullRequestData[0];
-    if (pr.status !== "approved") {
+    // 检查PR状态是否可以合并
+    if (pr.status === "merged" || pr.status === "closed") {
       await db.query("ROLLBACK");
-      return res
-        .status(400)
-        .json({ success: false, error: "拉取请求未被批准，无法合并" });
+      return res.status(400).json({
+        success: false,
+        error: "拉取请求已经被合并或关闭，无法再次合并",
+      });
     }
 
+    // 获取源分支和目标分支的文件
+    const [sourceFiles] = await db.query(
+      "SELECT id, name, type, parent_id, content FROM files WHERE branch_id = ? AND project_id = ?",
+      [sourceBranchId, projectId]
+    );
+
+    const [targetFiles] = await db.query(
+      "SELECT id, name, type, parent_id, content FROM files WHERE branch_id = ? AND project_id = ?",
+      [targetBranchId, projectId]
+    );
+
+    // 构建文件映射以便快速查找 - 使用组合键（名称+父ID）作为唯一标识
+    const targetFileMap = new Map();
+    targetFiles.forEach((file) => {
+      const key = `${file.name}_${file.parent_id || "root"}`;
+      targetFileMap.set(key, file);
+    });
+
+    // 执行合并操作：将源分支文件合并到目标分支
+    for (const sourceFile of sourceFiles) {
+      const key = `${sourceFile.name}_${sourceFile.parent_id || "root"}`;
+      const targetFile = targetFileMap.get(key);
+
+      if (!targetFile) {
+        // 目标分支没有该文件，需要新增
+        await db.query(
+          "INSERT INTO files (name, type, parent_id, content, branch_id, project_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+          [
+            sourceFile.name,
+            sourceFile.type,
+            sourceFile.parent_id,
+            sourceFile.content,
+            targetBranchId,
+            projectId,
+          ]
+        );
+      } else if (
+        sourceFile.type === "file" &&
+        sourceFile.content !== targetFile.content
+      ) {
+        // 文件内容不同，更新目标分支文件
+        await db.query(
+          "UPDATE files SET content = ?, updated_at = NOW() WHERE id = ?",
+          [sourceFile.content, targetFile.id]
+        );
+      }
+
+      // 从映射中移除已处理的文件
+      targetFileMap.delete(key);
+    }
+
+    // 获取更新后的目标分支文件
+    const [updatedTargetFiles] = await db.query(
+      "SELECT id, name, type, parent_id, content FROM files WHERE branch_id = ? AND project_id = ?",
+      [targetBranchId, projectId]
+    );
+
+    // 构建文件树并按层级排序（父文件夹优先）
+    const fileTree = buildFileTree(updatedTargetFiles);
+
+    // 清空源分支文件
+    await db.query("DELETE FROM files WHERE branch_id = ? AND project_id = ?", [
+      sourceBranchId,
+      projectId,
+    ]);
+
+    // 按层级顺序将目标分支文件同步回源分支
+    await syncFilesToBranch(fileTree, sourceBranchId, projectId, db);
+
+    // 添加历史记录
+    try {
+      const [versionCheck] = await db.query(
+        "SELECT id FROM versions WHERE branch_id = ? ORDER BY created_at DESC LIMIT 1",
+        [targetBranchId]
+      );
+
+      let versionId = null;
+      if (versionCheck.length > 0) {
+        versionId = versionCheck[0].id;
+      }
+
+      await db.query(
+        "INSERT INTO history (branch_id, operation_type, user_id, description, timestamp, version_id) VALUES (?, 'merge', ?, ?, NOW(), ?)",
+        [
+          targetBranchId,
+          req.user ? req.user.id : null,
+          `合并来自分支 ${sourceBranchId} 的拉取请求 #${pullRequestId}`,
+          versionId,
+        ]
+      );
+    } catch (err) {
+      console.log("添加历史记录失败，继续执行:", err);
+    }
+
+    // 更新拉取请求状态为已合并
     await db.query("UPDATE pull_requests SET status = 'merged' WHERE id = ?", [
       pullRequestId,
     ]);
 
+    // 更新源分支状态为已合并
+    try {
+      await db.query("UPDATE branches SET status = 'merged' WHERE id = ?", [
+        sourceBranchId,
+      ]);
+    } catch (err) {
+      console.log("更新分支状态失败，继续执行:", err);
+    }
+
+    // 创建通知
+    try {
+      await db.query(
+        "INSERT INTO notifications (user_id, message, is_read, created_at) VALUES (?, ?, FALSE, NOW())",
+        [creatorId, `您的拉取请求 #${pullRequestId} 已被合并`]
+      );
+    } catch (err) {
+      console.log("创建通知失败，继续执行:", err);
+    }
+
+    // 广播合并事件（如果你之前实现了实时同步）
+    global.io.to(`project_${projectId}`).emit("pull_request_merged", {
+      projectId,
+      pullRequestId,
+      mergedBy: req.user.id,
+      mergedAt: new Date().toISOString(),
+    });
+
     await db.query("COMMIT");
-    res.json({ success: true });
+    res.json({ success: true, message: "拉取请求已成功合并" });
   } catch (error) {
     console.error("合并拉取请求失败:", error);
-    const db = await getDb();
     await db.query("ROLLBACK");
     res.status(500).json({ success: false, error: "服务器错误" });
   }
 });
+
+// 构建文件树
+function buildFileTree(files) {
+  const fileMap = new Map();
+  files.forEach((file) => {
+    file.children = [];
+    fileMap.set(file.id, file);
+  });
+
+  const tree = [];
+  files.forEach((file) => {
+    if (file.parent_id === null || file.parent_id === 0) {
+      tree.push(file);
+    } else {
+      const parent = fileMap.get(file.parent_id);
+      if (parent) {
+        parent.children.push(file);
+      }
+    }
+  });
+
+  return tree;
+}
+
+// 按层级顺序同步文件到目标分支
+async function syncFilesToBranch(fileTree, branchId, projectId, db) {
+  const idMapping = new Map(); // 映射旧 ID 到新 ID
+
+  async function insertFileNode(node, newParentId) {
+    // 插入当前文件/文件夹
+    const [result] = await db.query(
+      "INSERT INTO files (name, type, parent_id, content, branch_id, project_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())",
+      [node.name, node.type, newParentId, node.content, branchId, projectId]
+    );
+
+    const newFileId = result.insertId;
+    idMapping.set(node.id, newFileId); // 保存旧 ID 到新 ID 的映射
+
+    // 递归插入子节点
+    for (const child of node.children) {
+      await insertFileNode(child, newFileId);
+    }
+  }
+
+  // 按层级顺序插入文件
+  for (const rootNode of fileTree) {
+    await insertFileNode(rootNode, null);
+  }
+}
 
 // 关闭拉取请求
 router.post("/pulls/:id/close", async (req, res) => {
