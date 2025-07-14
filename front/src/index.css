@@ -1,0 +1,14 @@
+@import "antd/dist/reset.css";
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+Content::-webkit-scrollbar-thumb {
+  display: none;
+}
+/* * {
+  overflow: hidden;
+} */

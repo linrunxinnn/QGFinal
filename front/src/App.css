@@ -1,0 +1,12 @@
+@import "antd/dist/reset.css";
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  /* padding: 10px 10px 0 10px; */
+}
+
+.page {
+  flex: 1;
+  height: 100%;
+}

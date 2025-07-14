@@ -1,0 +1,26 @@
+.chat-page {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 2fr 5fr;
+  overflow: hidden;
+  padding: 0;
+}
+
+.chat-list {
+  border-right: 1px solid #eee;
+  overflow-y: auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.chat-list::-webkit-scrollbar {
+  display: none; /* 隐藏滚动条 */
+}
+
+.chat-box {
+  flex: 1;
+  padding: 16px;
+  height: 100%;
+  overflow: auto;
+}

@@ -1,0 +1,23 @@
+/* 外层页面占满全屏 */
+.sign-page {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f7f7f7;
+}
+
+/* 中间这块白色区域（含 Tabs + 表单） */
+.sign-container {
+  width: 100%;
+  max-width: 500px;
+  background: #fff;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Tabs 导航栏内边距 */
+.tabs .ant-tabs-nav {
+  margin-bottom: 24px;
+}
