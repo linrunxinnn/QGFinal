@@ -1,5 +1,9 @@
-import React from "react";
-import { Button, Form, Input, Select, Space } from "antd";
+import React, { use } from "react";
+import { Button, Form, Input, message, Select, Space } from "antd";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { login } from "../../api/user";
+import { setLogin } from "../../feature/user/userSlice.js";
 
 const { Option } = Select;
 const layout = {
@@ -11,29 +15,27 @@ const tailLayout = {
 };
 const LoginForm = () => {
   const [form] = Form.useForm();
-  const onGenderChange = (value) => {
-    switch (value) {
-      case "male":
-        form.setFieldsValue({ note: "Hi, man!" });
-        break;
-      case "female":
-        form.setFieldsValue({ note: "Hi, lady!" });
-        break;
-      case "other":
-        form.setFieldsValue({ note: "Hi there!" });
-        break;
-      default:
+  const dispatch = useDispatch();
+  const navigator = useNavigate();
+
+  const onFinish = async (values) => {
+    try {
+      const res = await login(values);
+      console.log("登录成功", res);
+      const { token, user } = res.data;
+      dispatch(setLogin({ token, user }));
+      console.log("redux后", user);
+      localStorage.setItem("token", token);
+      navigator("/home");
+    } catch (error) {
+      console.log(error.message);
+      message.error("登录失败，请检查您的邮箱和密码是否正确");
     }
-  };
-  const onFinish = (values) => {
-    console.log(values);
   };
   const onReset = () => {
     form.resetFields();
   };
-  const onFill = () => {
-    form.setFieldsValue({ note: "Hello world!", gender: "male" });
-  };
+
   return (
     <div className="login-form">
       <Form
@@ -52,7 +54,7 @@ const LoginForm = () => {
         <Form.Item name="password" label="密码" rules={[{ required: true }]}>
           <Input.Password />
         </Form.Item>
-        <Form.Item
+        {/* <Form.Item
           noStyle
           shouldUpdate={(prevValues, currentValues) =>
             prevValues.gender !== currentValues.gender
@@ -69,7 +71,7 @@ const LoginForm = () => {
               </Form.Item>
             ) : null
           }
-        </Form.Item>
+        </Form.Item> */}
         <Form.Item {...tailLayout}>
           <Space>
             <Button type="primary" htmlType="submit">
@@ -77,9 +79,6 @@ const LoginForm = () => {
             </Button>
             <Button htmlType="button" onClick={onReset}>
               重置
-            </Button>
-            <Button type="link" htmlType="button" onClick={onFill}>
-              填充表单
             </Button>
           </Space>
         </Form.Item>

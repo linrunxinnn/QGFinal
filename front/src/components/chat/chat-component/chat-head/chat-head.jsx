@@ -5,16 +5,16 @@ import React from "react";
 import { Avatar, Button, Dropdown, Space } from "antd";
 import "./chat-head.css";
 
-const ChatHead = React.forwardRef(({ name, avatar }, ref) => {
+const ChatHead = ({ name, avatar, onMoreClick }) => {
   return (
-    <div className="chat-head" ref={ref}>
+    <div className="chat-head">
       <Space>
         <Avatar src={avatar} />
         <span>{name}</span>
       </Space>
-      <Button>...</Button>
+      <Button onClick={onMoreClick}>...</Button>
     </div>
   );
-});
+};
 
 export default ChatHead;

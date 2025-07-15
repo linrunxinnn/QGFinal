@@ -2,7 +2,7 @@
   height: 100%;
   display: grid;
   grid-template-columns: 2fr 5fr;
-  overflow: hidden;
+  /* overflow: hidden; */
   padding: 0;
 }
 
@@ -12,6 +12,8 @@
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   height: 100%;
+  margin-bottom: 3px;
+  padding: 0 10px;
 }
 
 .chat-list::-webkit-scrollbar {
@@ -20,7 +22,15 @@
 
 .chat-box {
   flex: 1;
-  padding: 16px;
+  padding: 0 16px 0 16px;
   height: 100%;
   overflow: auto;
+}
+
+.chat-list-item {
+  white-space: nowrap;
+  /* 超出部分用省略号 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
 }
